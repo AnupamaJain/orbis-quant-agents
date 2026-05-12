@@ -4,6 +4,8 @@
 **Status:** Live / Production-Ready  
 **Brand:** Orbis Quant AI  
 
+![Orbis Quant Agents Framework Schema](assets/schema.png)
+
 ---
 
 ## 1. Executive Summary
@@ -72,6 +74,46 @@ sequenceDiagram
     RK->>PM: Strategy & Risk Metrics
     PM->>PM: Final Synthesis
     Note over PM: Final BUY/SELL/HOLD Decision
+```
+
+#### Technical State Schema
+The framework maintains a global `AgentState` that propagates through the graph nodes:
+
+```mermaid
+stateDiagram-v2
+    [*] --> AnalystNodes
+    AnalystNodes --> MarketReport
+    AnalystNodes --> FundamentalReport
+    AnalystNodes --> NewsReport
+    AnalystNodes --> SmallCapReport
+    
+    MarketReport --> ResearchNodes
+    FundamentalReport --> ResearchNodes
+    NewsReport --> ResearchNodes
+    SmallCapReport --> ResearchNodes
+    
+    state ResearchNodes {
+        [*] --> BullResearcher
+        [*] --> BearResearcher
+        BullResearcher --> ResearchDebate
+        BearResearcher --> ResearchDebate
+    }
+    
+    ResearchDebate --> InvestmentPlan
+    InvestmentPlan --> RiskNodes
+    
+    state RiskNodes {
+        [*] --> Aggressive
+        [*] --> Conservative
+        [*] --> Neutral
+        Aggressive --> RiskAudit
+        Conservative --> RiskAudit
+        Neutral --> RiskAudit
+    }
+    
+    RiskAudit --> PortfolioManager
+    PortfolioManager --> FinalSignal
+    FinalSignal --> [*]
 ```
 
 ### 4.2. Indian Market Optimization

@@ -9,6 +9,8 @@
 
 **Orbis Quant Agents** is a state-of-the-art financial analysis framework that mirrors the structure of a professional quantitative trading firm. Unlike traditional single-agent systems, Orbis orchestrates a specialized "team" of LLM-powered agents that debate, cross-reference, and validate market data to deliver high-conviction trading intelligence.
 
+![Orbis Quant Agents Framework Schema](assets/schema.png)
+
 ---
 
 ## ⚡ What Makes Orbis Different?
@@ -79,9 +81,23 @@ sequenceDiagram
 
     A->>R: Intelligence Data
     R->>R: Adversarial Debate
-    R->>T: Investment Thesis
+    R->>T: Intelligence Thesis
     T->>T: Risk Audit
     Note over T: Final Signal Decision
+```
+
+#### Technical State Schema
+The underlying **LangGraph** engine manages a stateful transaction flow:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Analysts
+    Analysts --> Debate
+    Debate --> TraderPlan
+    TraderPlan --> RiskAudit
+    RiskAudit --> PortfolioManager
+    PortfolioManager --> FinalSignal
+    FinalSignal --> [*]
 ```
 
 ---
