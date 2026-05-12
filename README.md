@@ -32,6 +32,17 @@
 
 The framework is built around a **"Firm" Architecture**, where specialized agents (Analysts, Researchers, Traders) collaborate to deliver high-conviction investment strategies.
 
+```mermaid
+graph TD
+    User([User/CLI/Web]) --> Orchestrator[Orbis Quant Orchestrator]
+    Orchestrator --> DataLayer[(Data Vendors: yFinance, SEBI, Tenders)]
+    DataLayer --> AnalystTeam[Analyst Team: Market, News, Fundamentals, Small-Cap]
+    AnalystTeam --> ResearchTeam[Research Team: Bull vs Bear Debate]
+    ResearchTeam --> ExecutionTeam[Execution Team: Trader & Risk Mgmt]
+    ExecutionTeam --> PM[Portfolio Manager]
+    PM --> User
+```
+
 ### 🌐 Stunning Web Dashboard
 In addition to the powerful CLI, Orbis Quant Agents now features a **premium Streamlit-based web interface**:
 - **Real-time Intelligence Feed**: Watch as agents gather data and analyze tickers in real-time.
@@ -41,6 +52,20 @@ In addition to the powerful CLI, Orbis Quant Agents now features a **premium Str
 
 ### 🇮🇳 Indian Market Optimized
 - **Deep-domain awareness**: Optimized for **NSE/BSE** stocks, including automated tracking of RBI policies, Union Budgets, and regional sentiment.
+
+```mermaid
+flowchart LR
+    subgraph Indian_Context
+    SEBI[NSE/BSE Filings]
+    BD[Bulk/Block Deals]
+    GT[Govt Tenders]
+    end
+    
+    Indian_Context --> SmallCap[Small Cap & PSU Analyst]
+    Indian_Context --> Funda[Fundamentals Analyst]
+    
+    SmallCap & Funda --> Aggregator{Intelligence Aggregator}
+```
 - **🤖 Multi-LLM Native**: Fluidly switch between **GPT-4o/5**, **Claude 3.5/4**, **Gemini 1.5/3**, and local models via **Ollama**.
 - **📈 Comprehensive Intelligence**: Integrates technical indicators, fundamental data, news sentiment, and social media trends into a unified report.
 
@@ -62,6 +87,19 @@ Two specialized researchers—one **Bullish** and one **Bearish**—critically e
 ### 3. The Execution Desk (Trader & PM)
 *   **The Trader**: Synthesizes the debate into a concrete transaction proposal.
 *   **Portfolio Manager**: The final gatekeeper. Reviews risk levels, sizing, and the investment thesis before issuing a final **BUY / HOLD / SELL** decision.
+
+```mermaid
+sequenceDiagram
+    participant A as Analyst Team
+    participant R as Research Team (Bull/Bear)
+    participant T as Trader & PM
+
+    A->>R: Intelligence Data
+    R->>R: Adversarial Debate
+    R->>T: Investment Thesis
+    T->>T: Risk Audit
+    Note over T: Final Signal Decision
+```
 
 ---
 
