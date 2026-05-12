@@ -32,6 +32,20 @@ Retail and professional investors in the Indian market face three primary challe
 ## 4. Key Features
 
 ### 4.1. The "Firm" Architecture (Multi-Agent Workflow)
+
+#### High-Level System Architecture
+```mermaid
+graph TD
+    User([User/CLI/Web]) --> Orchestrator[Orbis Quant Orchestrator]
+    Orchestrator --> DataLayer[(Data Vendors: yFinance, SEBI, Tenders)]
+    DataLayer --> AnalystTeam[Analyst Team: Market, News, Fundamentals, Small-Cap]
+    AnalystTeam --> ResearchTeam[Research Team: Bull vs Bear Debate]
+    ResearchTeam --> ExecutionTeam[Execution Team: Trader & Risk Mgmt]
+    ExecutionTeam --> PM[Portfolio Manager]
+    PM --> User
+```
+
+#### Detailed Agent Orchestration Flow
 The framework orchestrates a sequential and iterative workflow:
 1.  **Analyst Team**: Gathers data (Technical, Fundamental, News, Social).
 2.  **Research Team**: A Bull and a Bear researcher debate the findings.
@@ -40,11 +54,53 @@ The framework orchestrates a sequential and iterative workflow:
 5.  **Risk Management**: Three analysts (Aggressive, Neutral, Conservative) evaluate risk.
 6.  **Portfolio Manager**: Issues the final BUY/HOLD/SELL decision.
 
+```mermaid
+sequenceDiagram
+    participant A as Analyst Team
+    participant R as Research Team (Bull/Bear)
+    participant RM as Research Manager
+    participant T as Trader
+    participant RK as Risk Management
+    participant PM as Portfolio Manager
+
+    A->>R: Raw Intelligence & Sentiment
+    R->>R: Argumentative Debate
+    R->>RM: Debate Transcripts
+    RM->>T: Investment Thesis
+    T->>RK: Execution Strategy
+    RK->>RK: Multi-perspective Risk Audit
+    RK->>PM: Strategy & Risk Metrics
+    PM->>PM: Final Synthesis
+    Note over PM: Final BUY/SELL/HOLD Decision
+```
+
 ### 4.2. Indian Market Optimization
 -   **SEBI Filing Connector**: Automatically tracks recent corporate announcements and regulatory filings from NSE/BSE.
 -   **Institutional Tracker**: Monitors Bulk and Block deals to identify FII/DII interest.
 -   **Small Cap & PSU Analyst**: A specialized agent that monitors government tenders, order wins, and PLI scheme impacts.
 -   **Macroeconomic Context**: Built-in awareness of RBI policy, Union Budgets, and monsoon impacts.
+
+#### Analyst Specialization Pipeline
+```mermaid
+flowchart LR
+    subgraph Core_Data
+    YF[yFinance]
+    end
+    
+    subgraph Indian_Context
+    SEBI[NSE/BSE Filings]
+    BD[Bulk/Block Deals]
+    GT[Govt Tenders]
+    end
+
+    Core_Data --> Market[Market Analyst]
+    Core_Data --> Funda[Fundamentals Analyst]
+    
+    Indian_Context --> SmallCap[Small Cap & PSU Analyst]
+    Indian_Context --> Funda
+    
+    Market & Funda & SmallCap --> Aggregator{Intelligence Aggregator}
+```
 
 ### 4.3. Dual-Interface System
 -   **Interactive CLI**: A high-speed terminal interface for power users with rich formatting and real-time logging.
