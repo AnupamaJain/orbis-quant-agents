@@ -135,7 +135,6 @@ docker compose run --rm orbisquantagents
 
 We are building the future of decentralized financial AI. Whether you are a quant, an AI researcher, or a developer, we welcome your contributions.
 
-Join the community: [Orbis Quant AI](https://orbisquant.ai/)
 
 ## 📄 Citation
 
