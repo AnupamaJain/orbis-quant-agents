@@ -180,18 +180,6 @@ Learn about finance & investing, psychology and how to build rule based system:
 - **Instagram**: [📸 @growthblueprintai](https://www.instagram.com/growthblueprintai/) - Market psychology.
 - **Discord**: [💬 Orbis Quant AI](https://discord.com/invite/hk9PGKShPK) - Technical support and research debate (coming soon).
 
-## 📄 Citation
-
-If you use Orbis Quant Agents in your research, please cite us:
-
-```bibtex
-@misc{orbisquant2026,
-      title={Orbis Quant Agents: Multi-Agents LLM Financial Quant Framework}, 
-      author={Orbis Quant AI Research Team},
-      year={2026},
-      url={https://github.com/OrbisQuantAI/OrbisQuantAgents}, 
-}
-```
 
 ---
 <p align="center">
