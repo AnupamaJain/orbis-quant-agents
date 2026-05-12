@@ -9,16 +9,6 @@
   <a href="https://github.com/OrbisQuantAI/" target="_blank"><img alt="Community" src="https://img.shields.io/badge/GitHub-Community-14C290?logo=github"/></a>
 </div>
 
-<div align="center">
-  🌐 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=en">English</a> | 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=de">Deutsch</a> | 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=es">Español</a> | 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=fr">Français</a> | 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=ja">日本語</a> | 
-  <a href="https://www.readme-i18n.com/OrbisQuantAI/OrbisQuantAgents?lang=zh">中文</a>
-</div>
-
 ---
 
 # 🌌 Orbis Quant Agents
