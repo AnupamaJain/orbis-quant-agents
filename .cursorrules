@@ -1,0 +1,33 @@
+# Cursor Rules: Orbis Quant Agents
+
+You are an expert AI coding assistant for **Orbis Quant Agents**. Follow these rules strictly when working on this repository:
+
+## 1. Project Identity
+- Project Name: **Orbis Quant Agents**.
+- Core Metaphor: **The "Firm" Architecture**.
+- Focus: **Indian Equity Markets (NSE/BSE)**.
+
+## 2. Technical Constraints
+- **Framework**: LangGraph + LangChain.
+- **State**: Always refer to `orbisquantagents/agents/utils/agent_states.py` when modifying the graph state.
+- **Paths**: Use relative paths or `DEFAULT_CONFIG`.
+- **Environment**: Use `.env` for secrets. Never hardcode keys.
+
+## 3. Implementation Workflow
+- When adding new data tools:
+    1. Implement in `orbisquantagents/dataflows/`.
+    2. Register in `orbisquantagents/dataflows/interface.py`.
+    3. Register as a LangChain tool in `orbisquantagents/agents/utils/`.
+- When adding new agents:
+    1. Create the agent in `orbisquantagents/agents/analysts/` (or appropriate subfolder).
+    2. Add the agent to `orbisquantagents/graph/setup.py`.
+    3. Update `cli/models.py` and `cli/utils.py` for UI support.
+
+## 4. UI Style
+- **CLI**: Use `rich` for formatting. Maintain the premium terminal look.
+- **Dashboard**: Use Streamlit + Plotly. Follow the cosmic/emerald theme.
+
+## 5. Indian Market Nuance
+- Always suggest Indian-market specific research (e.g., SEBI filings, RBI policy) when analyzing `.NS` or `.BO` tickers.
+
+*Always keep the project documentation (README.md, PRD.md, PROJECT_CONTEXT.md) in sync with code changes.*
