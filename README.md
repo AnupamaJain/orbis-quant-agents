@@ -186,21 +186,21 @@ docker compose run --rm orbisquantagents
 
 ## 🤝 Join the Community
 
-Learn how to build and optimize AI trading agents on our social channels:
+Learn about finance & investing, psychology and how to build rule based system:
 
-- **YouTube**: [🔗 Growth Blueprint AI](https://youtube.com/@growthblueprint-ai) - Deep dives into Multi-Agent architectures.
-- **Instagram**: [📸 @growthblueprintai](https://www.instagram.com/growthblueprintai/) - Daily insights and AI stock analysis.
-- **Discord**: [💬 Orbis Quant AI](https://discord.com/invite/hk9PGKShPK) - Technical support and research debate.
+- **YouTube**: [🔗 Growth Blueprint AI](https://youtube.com/@growthblueprint-ai) - Deep dives into fundamental & technical research.
+- **Instagram**: [📸 @growthblueprintai](https://www.instagram.com/growthblueprintai/) - Market psychology.
+- **Discord**: [💬 Orbis Quant AI](https://discord.com/invite/hk9PGKShPK) - Technical support and research debate (coming soon).
 
 ## 📄 Citation
 
 If you use Orbis Quant Agents in your research, please cite us:
 
 ```bibtex
-@misc{orbisquant2025,
-      title={Orbis Quant Agents: Multi-Agents LLM Financial Trading Framework}, 
+@misc{orbisquant2026,
+      title={Orbis Quant Agents: Multi-Agents LLM Financial Quant Framework}, 
       author={Orbis Quant AI Research Team},
-      year={2025},
+      year={2026},
       url={https://github.com/OrbisQuantAI/OrbisQuantAgents}, 
 }
 ```
