@@ -2,13 +2,6 @@
   <img src="assets/OrbisQuantLogo.png" style="width: 50%; height: auto;">
 </p>
 
-<div align="center">
-  <a href="https://arxiv.org/abs/2412.20138" target="_blank"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2412.20138-B31B1B?logo=arxiv"/></a>
-  <a href="https://discord.com/invite/hk9PGKShPK" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-OrbisQuant-7289da?logo=discord&logoColor=white&color=7289da"/></a>
-  <a href="https://x.com/OrbisQuantAI" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-OrbisQuantAI-white?logo=x&logoColor=white"/></a>
-  <a href="https://github.com/OrbisQuantAI/" target="_blank"><img alt="Community" src="https://img.shields.io/badge/GitHub-Community-14C290?logo=github"/></a>
-</div>
-
 ---
 
 # 🌌 Orbis Quant Agents
