@@ -1,30 +1,30 @@
-🚀 Excited to announce the launch of **Orbis Quant Agents** — the first autonomous multi-agent financial intelligence firm optimized for the Indian Equity Market! 🌌📈
+🚀 Reimagining Quantitative Finance with **Multi-Agent AI Orchestration** 🌌📈
 
-Most AI trading bots are single-agent systems prone to hallucination and bias. We’ve changed the game by mirroring the structure of a professional quantitative trading firm. 
+Most AI applications in trading rely on a single, isolated LLM—a recipe for bias and reasoning gaps. Today, I'm launching **Orbis Quant Agents**, a framework that shifts the paradigm from "AI Chatbot" to an **Autonomous Multi-Agent Firm**.
 
-Introducing the **"Firm" Architecture**:
-Instead of one AI, Orbis orchestrates a specialized team of agents that debate, cross-reference, and validate market data before making a move:
+### 🧠 The Technical Core: Multi-Agent Orchestration
+Built on **LangGraph**, Orbis uses a stateful, directed acyclic graph (DAG) to manage a complex multi-agent workflow. This isn't just "chaining" prompts; it's a sophisticated system where agents possess specialized "identities," "memory," and "tool-use" capabilities.
 
-🕵️ **Analyst Team**: Deep-dives into Technicals, Fundamentals, and News.
-⚔️ **The Debate Arena**: Bullish and Bearish researchers engage in a structured debate to find the truth between the hype and the risks.
-⚖️ **Risk Audit**: Three distinct perspectives (Aggressive, Neutral, Conservative) stress-test every strategy.
-🏛️ **Portfolio Manager**: Synthesizes the entire intelligence feed into a final, high-conviction decision.
+### 🏛️ The "Firm" Architecture:
+We’ve mirrored the internal logic of a top-tier hedge fund using an **Adversarial Reasoning** model:
 
-🇮🇳 **Optimized for India (NSE/BSE)**:
-We’ve built custom data connectors specifically for the Indian ecosystem:
-✅ **SEBI Filings**: Automatic tracking of corporate announcements.
-✅ **Institutional Activity**: Real-time monitoring of Bulk & Block deals.
-✅ **Small Cap & PSU Engine**: Specialized "Deep Think" mode for identifying government tender wins and policy catalysts.
+1.  **Specialized Analysts (Intelligence Layer)**: Multiple agents (Market, News, Fundamentals, Social) execute concurrent tool-calls to gather raw intelligence.
+2.  **The Debate Arena (Adversarial Layer)**: This is where it gets interesting. **Bull vs. Bear Researchers** engage in a structured debate, pressuring the data to expose risks that a single agent would miss.
+3.  **Risk Audit (Validation Layer)**: Three distinct risk analysts (Aggressive, Conservative, Neutral) perform a multi-perspective audit of the proposed strategy.
+4.  **Portfolio Manager (Synthesis Layer)**: Uses confidence-weighted voting to issue the final BUY/SELL/HOLD signal.
 
-🖥️ **Dual-Mode Interface**:
-Whether you're a terminal power user or prefer a premium web experience, we've got you covered with a high-performance **CLI** and a stunning **Streamlit Web Dashboard**.
+### 🛠️ The Tech Stack:
+- **Orchestration**: LangGraph (Stateful Agent Graphs)
+- **Framework**: LangChain & Pydantic
+- **State Propagation**: Global `AgentState` management
+- **UI**: High-performance CLI (Rich) + Web Dashboard (Streamlit & Plotly)
+- **Data Ingestion**: Optimized Indian market connectors (SEBI, Bulk Deals, Govt Tenders)
 
-🔗 **Open Source & Community**:
-We believe the future of quantitative finance is decentralized and collaborative.
-- **GitHub**: https://github.com/AnupamaJain/orbis-quant-agents
-- **YouTube (Deep Dives)**: youtube.com/@growthblueprint-ai
-- **Instagram**: instagram.com/growthblueprintai/
+We are open-sourcing the core framework because we believe the future of finance is built on collaborative, transparent, and multi-perspective AI.
 
-Special thanks to the community at **Growth Blueprint AI** for the inspiration and support. Let's build the future of autonomous financial intelligence together!
+🔗 **Explore the Code**: https://github.com/AnupamaJain/orbis-quant-agents
 
-#AI #QuantitativeFinance #StockMarketIndia #MultiAgentSystems #AlgorithmicTrading #Python #OpenSource #NSE #BSE #OrbisQuantAgents
+Join me on the **Growth Blueprint AI** YouTube channel as I deep-dive into the low-level design of these agents!
+
+#AI #LangGraph #MultiAgentSystems #QuantitativeFinance #Python #MachineLearning #GenerativeAI #FinTech #AlgorithmicTrading #OrbisQuantAgents
+
