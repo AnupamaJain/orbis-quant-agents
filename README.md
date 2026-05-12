@@ -34,6 +34,9 @@ graph TD
 
 ### 🌐 Stunning Web Dashboard
 In addition to the powerful CLI, Orbis Quant Agents now features a **premium Streamlit-based web interface**:
+
+![Orbis Quant Agents Web Dashboard](assets/web_ui_demo.png)
+
 - **Real-time Intelligence Feed**: Watch as agents gather data and analyze tickers in real-time.
 - **Interactive Visualization**: High-performance Plotly charts with technical indicators (SMA, Volume).
 - **The Debate Arena**: Side-by-side view of the Bull vs. Bear strategy debate.
