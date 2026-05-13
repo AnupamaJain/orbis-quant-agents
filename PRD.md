@@ -503,6 +503,26 @@ print(f"Final Decision: {decision}")
 
 ---
 
+## APPENDIX B: ARCHITECTURE DIAGRAMS
+
+All system architecture and design diagrams are maintained in a dedicated document to keep them current alongside the code.
+
+📐 **[→ View Full Architecture Document (ARCHITECTURE.md)](ARCHITECTURE.md)**
+
+The architecture document contains:
+- **Diagram 1**: High-Level Design (HLD) — System Boundaries & External Integrations
+- **Diagram 2**: Component Architecture — Package-level dependency graph
+- **Diagram 3**: Data Flow Diagram (DFD) — Full analysis run, input to output
+- **Diagram 4**: Agent Interaction Sequence Diagram — Precise temporal ordering
+- **Diagram 5**: State Machine Diagram — LangGraph node state transitions
+- **Diagram 6**: Indian Data Connector Architecture — SEBI/Bulk/Tender pipeline
+- **Diagram 7**: Deployment Architecture — Docker containerization model
+- **Diagram 8**: LLM Client Factory — Dynamic provider assignment
+- **Diagram 9**: Bull vs. Bear Debate Flow — Adversarial reasoning deep-dive
+- **Diagram 10**: Risk Audit Flow — Multi-perspective position sizing
+
+---
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     ORBIS QUANT AI   |   github.com/AnupamaJain/orbis-quant-agents
