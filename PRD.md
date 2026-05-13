@@ -1,186 +1,93 @@
-# Product Requirements Document (PRD): Orbis Quant Agents
+# PRODUCT REQUIREMENTS DOCUMENT: ORBIS QUANT AGENTS
 
-**Version:** 1.0  
-**Status:** Live / Production-Ready  
-**Brand:** Orbis Quant AI  
-
-![Orbis Quant Agents Framework Schema](assets/schema.png)
+**Project:** Autonomous Multi-Agent Financial Intelligence Firm (Indian Equity Specialized)  
+**Version:** 1.1 | **Date:** May 2026  
+**Status:** Production-Ready / Public Release  
+**Brand:** Orbis Quant AI
 
 ---
 
 ## 1. Executive Summary
-**Orbis Quant Agents** is an autonomous, multi-agent quantitative trading and research framework. Unlike traditional single-agent AI tools, Orbis utilizes a **"Firm" Architecture**, where specialized AI agents (Analysts, Researchers, Traders) collaborate and debate to eliminate bias and deliver high-conviction investment strategies. 
+### 1.1 Product Vision
+**Orbis Quant Agents** is designed to democratize high-conviction quantitative research by providing an "Institutional-Grade Research Firm in a Box." The product enables retail and professional investors in the Indian market to move from a ticker symbol to a 10-page, adversarial, and risk-audited investment thesis in under 5 minutes.
 
-The framework is uniquely optimized for the **Indian Equity Market (NSE/BSE)**, featuring deep-domain awareness of regional macroeconomic factors and specialized data connectors for SEBI corporate filings and institutional activity.
+### 1.2 Key Differentiators
+- **Adversarial Reasoning**: Unlike single-agent LLM bots, Orbis uses a "Bull vs. Bear" debate mechanism to eliminate cognitive bias and hallucination.
+- **Indian Market Specialization**: First-of-its-kind specialized connectors for SEBI corporate filings, NSE/BSE Bulk/Block deals, and PSU-specific government tender tracking.
+- **Stateful Intelligence**: Built on LangGraph, the system maintains a complex state that allows for reflection, self-correction, and long-term research continuity.
 
 ---
 
 ## 2. Problem Statement
-Retail and professional investors in the Indian market face three primary challenges:
-1.  **Information Overload**: Managing news, social media sentiment, and government filings (SEBI) across thousands of stocks.
-2.  **Cognitive Bias**: Relying on a single analytical perspective when making trading decisions.
-3.  **Complexity of PSU/Small Caps**: These stocks move on specific government catalysts (tenders, order wins) that traditional fundamental tools often ignore.
+### 2.1 The Retail Gap
+Retail investors in India lack access to real-time institutional-grade intelligence. Corporate filings (SEBI) and high-value deal data (Bulk/Block) are often buried in PDFs or expensive terminal subscriptions.
+### 2.2 Cognitive Bias
+Most traders suffer from "Confirmation Bias." Orbis solves this by making a **Bear Analyst** a mandatory part of every decision flow, ensuring that "pumps" are met with technical skepticism.
 
 ---
 
-## 3. Goals & Objectives
--   **Autonomous Research**: Automate the end-to-end intelligence gathering for any ticker.
--   **Structured Debate**: Use a Bull vs. Bear debate mechanism to pressure-test investment ideas.
--   **Indian Market Specialization**: Provide first-class support for Indian equity catalysts.
--   **Universal Accessibility**: Offer both a power-user CLI and a premium web-based dashboard.
+## 3. Agentic AI Design (The "Firm" Architecture) 🤖
+The framework follows a hierarchical and adversarial "Firm" model.
+
+### 3.1 The Orchestration Layer (LangGraph)
+The system operates as a stateful Directed Acyclic Graph (DAG). 
+- **Nodes**: Specialized Agents.
+- **Edges**: Conditional logic based on analyst confidence scores and market volatility.
+
+### 3.2 The Intelligence Tools (The Hands)
+- **Primary Data**: yFinance API for real-time OHLCV and technicals.
+- **Specialized Scrapers**: Custom Python dataflows for NSE/BSE tender announcements and SEBI filing extraction.
+- **Social Connectors**: Sentiment analysis tools for X (Twitter) and Telegram stock communities.
+
+### 3.3 The Memory System
+- **Ephemeral State**: Shared `AgentState` object passing reports between nodes.
+- **Persistence Layer**: JSON-based `FinancialSituationMemory` for storing past debates and ticker-specific insights to avoid redundant API costs.
+
+### 3.4 Guardrails & Logic
+- **Budget Control**: Configurable token limits per analysis run.
+- **Ticker Validation**: Automated suffix injection (`.NS` / `.BO`) to ensure data accuracy for the Indian market.
 
 ---
 
-## 4. Key Features
+## 4. Feature Breakdown & Pillars
 
-### 4.1. The "Firm" Architecture (Multi-Agent Workflow)
+### Pillar 1: Data Ingestion & Localization
+- **SEBI Filing Tracker**: Parses regulatory announcements for key management changes or legal updates.
+- **PSU/Small-Cap Analyst**: Specialized toolset to monitor government order wins and PLI scheme catalysts.
 
-#### High-Level System Architecture
-```mermaid
-graph TD
-    User([User/CLI/Web]) --> Orchestrator[Orbis Quant Orchestrator]
-    Orchestrator --> DataLayer[(Data Vendors: yFinance, SEBI, Tenders)]
-    DataLayer --> AnalystTeam[Analyst Team: Market, News, Fundamentals, Small-Cap]
-    AnalystTeam --> ResearchTeam[Research Team: Bull vs Bear Debate]
-    ResearchTeam --> ExecutionTeam[Execution Team: Trader & Risk Mgmt]
-    ExecutionTeam --> PM[Portfolio Manager]
-    PM --> User
-```
+### Pillar 2: The Adversarial Strategy Lab
+- **Bullish Researcher**: High-conviction growth analysis.
+- **Bearish Researcher**: "Devil's Advocate" logic focusing on overvaluation and macro headwinds.
+- **Research Manager**: The "Judge" node that synthesizes the debate into a single, high-conviction thesis.
 
-#### Detailed Agent Orchestration Flow
-The framework orchestrates a sequential and iterative workflow:
-1.  **Analyst Team**: Gathers data (Technical, Fundamental, News, Social).
-2.  **Research Team**: A Bull and a Bear researcher debate the findings.
-3.  **Research Manager**: Acts as a judge to synthesize the debate into a plan.
-4.  **Trader**: Formulates an execution strategy based on the research.
-5.  **Risk Management**: Three analysts (Aggressive, Neutral, Conservative) evaluate risk.
-6.  **Portfolio Manager**: Issues the final BUY/HOLD/SELL decision.
+### Pillar 3: Technical Execution & Risk Audit
+- **The AI Trader**: Converts the abstract thesis into a technical setup (Entry, Target, Stop-Loss).
+- **Risk Audit Swarm**: Three agents (Aggressive, Neutral, Conservative) audit the trader's plan against current market volatility.
 
-```mermaid
-sequenceDiagram
-    participant A as Analyst Team
-    participant R as Research Team (Bull/Bear)
-    participant RM as Research Manager
-    participant T as Trader
-    participant RK as Risk Management
-    participant PM as Portfolio Manager
-
-    A->>R: Raw Intelligence & Sentiment
-    R->>R: Argumentative Debate
-    R->>RM: Debate Transcripts
-    RM->>T: Investment Thesis
-    T->>RK: Execution Strategy
-    RK->>RK: Multi-perspective Risk Audit
-    RK->>PM: Strategy & Risk Metrics
-    PM->>PM: Final Synthesis
-    Note over PM: Final BUY/SELL/HOLD Decision
-```
-
-#### Technical State Schema
-The framework maintains a global `AgentState` that propagates through the graph nodes:
-
-```mermaid
-stateDiagram-v2
-    [*] --> AnalystNodes
-    AnalystNodes --> MarketReport
-    AnalystNodes --> FundamentalReport
-    AnalystNodes --> NewsReport
-    AnalystNodes --> SmallCapReport
-    
-    MarketReport --> ResearchNodes
-    FundamentalReport --> ResearchNodes
-    NewsReport --> ResearchNodes
-    SmallCapReport --> ResearchNodes
-    
-    state ResearchNodes {
-        [*] --> BullResearcher
-        [*] --> BearResearcher
-        BullResearcher --> ResearchDebate
-        BearResearcher --> ResearchDebate
-    }
-    
-    ResearchDebate --> InvestmentPlan
-    InvestmentPlan --> RiskNodes
-    
-    state RiskNodes {
-        [*] --> Aggressive
-        [*] --> Conservative
-        [*] --> Neutral
-        Aggressive --> RiskAudit
-        Conservative --> RiskAudit
-        Neutral --> RiskAudit
-    }
-    
-    RiskAudit --> PortfolioManager
-    PortfolioManager --> FinalSignal
-    FinalSignal --> [*]
-```
-
-### 4.2. Indian Market Optimization
--   **SEBI Filing Connector**: Automatically tracks recent corporate announcements and regulatory filings from NSE/BSE.
--   **Institutional Tracker**: Monitors Bulk and Block deals to identify FII/DII interest.
--   **Small Cap & PSU Analyst**: A specialized agent that monitors government tenders, order wins, and PLI scheme impacts.
--   **Macroeconomic Context**: Built-in awareness of RBI policy, Union Budgets, and monsoon impacts.
-
-#### Analyst Specialization Pipeline
-```mermaid
-flowchart LR
-    subgraph Core_Data
-    YF[yFinance]
-    end
-    
-    subgraph Indian_Context
-    SEBI[NSE/BSE Filings]
-    BD[Bulk/Block Deals]
-    GT[Govt Tenders]
-    end
-
-    Core_Data --> Market[Market Analyst]
-    Core_Data --> Funda[Fundamentals Analyst]
-    
-    Indian_Context --> SmallCap[Small Cap & PSU Analyst]
-    Indian_Context --> Funda
-    
-    Market & Funda & SmallCap --> Aggregator{Intelligence Aggregator}
-```
-
-### 4.3. Dual-Interface System
--   **Interactive CLI**: A high-speed terminal interface for power users with rich formatting and real-time logging.
--   **Streamlit Dashboard**: A premium web interface featuring:
-    -   Real-time agent progress tracking.
-    -   Interactive Plotly charts (Candlestick + Indicators).
-    -   Side-by-side debate visualization.
+### Pillar 4: Portfolio Management & UI
+- **Executive Summary Gen**: Produces a final BUY/SELL/HOLD report with a confidence percentage.
+- **Premium Dashboard**: Streamlit interface with live Plotly charts and "The Debate Arena" visualization.
 
 ---
 
-## 5. Technical Stack
--   **Orchestration**: LangGraph (Stateful multi-agent orchestration).
--   **LLM Clients**: OpenAI (GPT-4o/5), Anthropic (Claude 3.5), Google (Gemini 1.5/2.0), Ollama (Local).
--   **Web UI**: Streamlit.
--   **Visualization**: Plotly.
--   **Data Ingestion**: YFinance, custom Indian Data Scrapers.
--   **State Management**: FinancialSituationMemory (Local JSON-based persistence).
+## 5. Technical Stack 🛠️
+- **Framework**: LangGraph, LangChain.
+- **UI/UX**: Streamlit (Web), Rich (CLI).
+- **Data Visualization**: Plotly (Interactive Charts).
+- **LLM Support**: GPT-4o (Primary), Gemini 2.0 (Analysis), Claude 3.5 (Reasoning).
+- **Environment**: UV-managed Python environment, Dockerized deployment.
 
 ---
 
-## 6. User Personas
-1.  **The Quantitative Researcher**: Uses the framework to generate high-conviction research papers and strategy backtests.
-2.  **The Active Retail Trader**: Uses the "Deep Think" mode for Small Caps to catch PSU momentum rallies.
-3.  **The Risk Manager**: Uses the multi-agent risk debate to sanity-check large position entries.
-
----
-
-## 7. Roadmap (Future Enhancements)
--   **Phase 2**: Integration with Indian brokers (Dhan/Zerodha) for automated paper trading.
--   **Phase 3**: Hindi and regional language support for final reports.
--   **Phase 4**: On-chain data integration for Hybrid Finance (CeFi + DeFi) analysis.
-
----
-
-## 8. Success Metrics
--   **Reasoning Quality**: Percentage of reports that identify the core catalyst correctly.
--   **Execution Speed**: Reducing the "Time-to-Insight" for a full fundamental audit from hours to minutes.
--   **User Engagement**: Adoption of the Streamlit dashboard vs. traditional research methods.
+## 6. Appendix: The Agent Roster
+| Agent Name | Role | Core Responsibility |
+| :--- | :--- | :--- |
+| **Market Analyst** | Technicals | Patterns, RSI, MACD, Volume Profile. |
+| **Small-Cap Analyst** | Catalysts | PSU Tenders, Order Wins, PLI schemes. |
+| **Bull Researcher** | Optimist | Defending the Long thesis. |
+| **Bear Researcher** | Skeptic | Identifying the Short thesis / Risks. |
+| **Risk Auditor** | Protection | Stress-testing the position size and targets. |
+| **Portfolio Manager** | Decision | Final BUY/SELL signal synthesis. |
 
 ---
 **Orbis Quant AI**  
