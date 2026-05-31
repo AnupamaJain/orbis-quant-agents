@@ -8,6 +8,9 @@ import time
 import json
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
 from orbisquantagents.default_config import DEFAULT_CONFIG
@@ -103,18 +106,17 @@ def display_chart(data, ticker):
     st.plotly_chart(fig, use_container_width=True)
 
 # --- LOGO & HEADER ---
-col1, col2 = st.columns([1, 4])
+col1, col2 = st.columns([1, 5])
 with col1:
-    # Try to load local logo if it exists, otherwise use a placeholder emoji
     logo_path = Path("assets/OrbisQuantLogo.png")
     if logo_path.exists():
-        st.image(str(logo_path), width=150)
+        st.image(str(logo_path), width=100)
     else:
         st.markdown("# 🌌")
 
 with col2:
     st.title("Orbis Quant Agents")
-    st.markdown("*Autonomous Multi-Agent Financial Intelligence Firm*")
+    st.markdown("**✨ AI Powered** | *Autonomous Multi-Agent Financial Intelligence Firm*")
 
 st.divider()
 
@@ -209,7 +211,17 @@ else:
     config = DEFAULT_CONFIG.copy()
     config["max_debate_rounds"] = depth_map[depth]
     config["max_risk_discuss_rounds"] = depth_map[depth]
-    config["llm_provider"] = provider.lower()
+    
+    selected_provider = provider.lower()
+    config["llm_provider"] = selected_provider
+    
+    # Load model overrides from environment variables
+    config["deep_think_llm"] = os.getenv("DEEP_THINK_LLM", config["deep_think_llm"])
+    config["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", config["quick_think_llm"])
+    
+    # Clear the default OpenAI backend_url if the provider is not OpenAI
+    if selected_provider != "openai":
+        config["backend_url"] = None
     
     # Initialize Graph
     graph = OrbisQuantAgentsGraph(

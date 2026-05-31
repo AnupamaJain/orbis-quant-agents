@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/OrbisQuantLogo.png" style="width: 50%; height: auto;">
+  <img src="assets/OrbisBanner.png" style="width: 50%; height: auto;">
 </p>
 <div align="center">
   <a href="https://youtube.com/@growthblueprint-ai" target="_blank"><img alt="YouTube" src="https://img.shields.io/badge/YouTube-GrowthBlueprint-red?logo=youtube&logoColor=white"/></a>
@@ -140,6 +140,11 @@ ANTHROPIC_API_KEY=your_key
 Launch the premium web interface:
 ```bash
 streamlit run web_ui.py
+```
+
+*Note: If running behind a cloud container, VM, or proxy and you encounter a blank page or connection errors, launch with CORS and XSRF disabled:*
+```bash
+streamlit run web_ui.py --server.headless true --server.enableCORS false --server.enableXsrfProtection false
 ```
 
 #### 2. Command Line Interface
