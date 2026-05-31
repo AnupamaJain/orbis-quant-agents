@@ -34,8 +34,12 @@ load_dotenv()
 
 # ── Server setup ─────────────────────────────────────────────────────────────
 
+_PORT = int(os.getenv("MCP_PORT", "8001"))
+
 mcp = FastMCP(
     name="orbis-quant-agents",
+    host="0.0.0.0",
+    port=_PORT,
     instructions=(
         "Multi-agent quantitative analysis for Indian stock markets (NSE/BSE). "
         "Runs Technical, Fundamental, Sentiment and News agents followed by a "
@@ -257,8 +261,7 @@ if __name__ == "__main__":
         transport = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else "stdio"
 
     if transport == "sse":
-        port = int(os.getenv("MCP_PORT", "8001"))
-        print(f"Starting Orbis Quant Agents MCP server (SSE) on port {port}…")
-        mcp.run(transport="sse", port=port)
+        print(f"Starting Orbis Quant Agents MCP server (SSE) on port {_PORT}…")
+        mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")
