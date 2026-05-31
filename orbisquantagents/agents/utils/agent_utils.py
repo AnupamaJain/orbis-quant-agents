@@ -11,12 +11,15 @@ from orbisquantagents.agents.utils.fundamental_data_tools import (
     get_fundamentals,
     get_balance_sheet,
     get_cashflow,
-    get_income_statement
+    get_income_statement,
+    get_sebi_filings,
+    get_bulk_block_deals,
 )
 from orbisquantagents.agents.utils.news_data_tools import (
     get_news,
     get_insider_transactions,
-    get_global_news
+    get_global_news,
+    get_government_tenders,
 )
 
 
