@@ -27,15 +27,17 @@ st.set_page_config(
 # --- STYLING ---
 st.markdown("""
     <style>
-    /* System variables fallback if not loaded */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* System variables fallback to Light Warm Theme */
     :root {
-        --color-background-primary: #0e1117;
-        --color-background-secondary: #151922;
-        --color-border-tertiary: #2e3244;
-        --color-border-secondary: #4a4a4a;
-        --color-text-primary: #ffffff;
-        --color-text-secondary: #8c96a8;
-        --color-text-tertiary: #6c7688;
+        --color-background-primary: #ffffff;
+        --color-background-secondary: #f4f3ed;
+        --color-border-tertiary: #e5e4dd;
+        --color-border-secondary: #c8c7c0;
+        --color-text-primary: #111111;
+        --color-text-secondary: #444444;
+        --color-text-tertiary: #777777;
         --border-radius-md: 8px;
         --border-radius-lg: 12px;
     }
@@ -47,13 +49,13 @@ st.markdown("""
 
     /* Main background */
     .main {
-        background-color: var(--color-background-primary);
+        background-color: var(--color-background-primary) !important;
     }
 
-    /* --- SIDEBAR STYLING --- */
+    /* --- SIDEBAR STYLING (LIGHT WARM THEME) --- */
     section[data-testid="stSidebar"] {
         background-color: var(--color-background-secondary) !important;
-        border-right: 0.5px solid var(--color-border-tertiary) !important;
+        border-right: 1px solid var(--color-border-tertiary) !important;
     }
 
     /* Sidebar headings / section labels */
@@ -62,12 +64,13 @@ st.markdown("""
     section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h2,
     section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h3 {
         font-family: 'Inter', sans-serif !important;
-        color: var(--color-text-primary) !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
+        color: var(--color-text-tertiary) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.04em !important;
         margin-bottom: 12px !important;
+        margin-top: 15px !important;
     }
 
     /* Sidebar widget labels */
@@ -83,8 +86,8 @@ st.markdown("""
     /* Sidebar input fields, selectors, and dropdowns */
     section[data-testid="stSidebar"] div[data-baseweb="input"],
     section[data-testid="stSidebar"] div[data-baseweb="select"] {
-        background-color: var(--color-background-primary) !important;
-        border: 0.5px solid var(--color-border-secondary) !important;
+        background-color: #ffffff !important;
+        border: 1px solid var(--color-border-secondary) !important;
         border-radius: var(--border-radius-md) !important;
     }
     section[data-testid="stSidebar"] div[data-baseweb="input"] input,
@@ -115,25 +118,30 @@ st.markdown("""
 
     /* Sidebar range slider overrides */
     section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="slider"] {
-        background-color: #E24B4A !important;
-        border: 2px solid #ffffff !important;
+        background-color: #ffffff !important;
+        border: 1px solid var(--color-border-secondary) !important;
         width: 14px !important;
         height: 14px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="presentation"] > div {
-        background-color: #E24B4A !important;
+        background-color: var(--color-border-secondary) !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stSlider"] div[data-testid="stWidgetLabel"] + div {
         margin-top: 4px !important;
     }
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] span {
+        color: #E24B4A !important;
+        font-weight: 500 !important;
+    }
 
     /* --- METRIC CARDS STYLING --- */
     div[data-testid="stMetric"] {
-        background-color: var(--color-background-secondary) !important;
-        border: 0.5px solid var(--color-border-tertiary) !important;
+        background-color: #ffffff !important;
+        border: 1px solid var(--color-border-tertiary) !important;
         border-radius: var(--border-radius-md) !important;
         padding: 12px 16px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        box-shadow: none !important;
     }
     div[data-testid="stMetric"] label {
         font-size: 11px !important;
@@ -152,23 +160,25 @@ st.markdown("""
         font-weight: 500 !important;
     }
 
-    /* Primary Run Button Redesign */
+    /* Primary Run Button Redesign (Light Minimalist style) */
     div.stButton > button:first-child {
-        background-color: #E24B4A !important;
-        color: #ffffff !important;
-        border: none !important;
+        background-color: var(--color-background-secondary) !important;
+        color: var(--color-text-primary) !important;
+        border: 1px solid var(--color-border-secondary) !important;
         border-radius: var(--border-radius-md) !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
-        height: 38px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        padding: 6px 12px !important;
+        height: auto !important;
+        min-height: 38px !important;
         width: 100% !important;
-        box-shadow: 0 4px 6px rgba(226, 75, 74, 0.2) !important;
+        box-shadow: none !important;
         transition: all 0.15s ease-in-out !important;
     }
     div.stButton > button:first-child:hover {
-        opacity: 0.9 !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 10px rgba(226, 75, 74, 0.3) !important;
+        background-color: #e5e4dd !important;
+        border-color: var(--color-text-secondary) !important;
     }
 
     /* Tabs Styling */
@@ -183,27 +193,138 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Report boxes matching debate cards */
+    /* Report and Debate boxes matching cards */
     .report-box {
-        background-color: var(--color-background-secondary);
-        border: 0.5px solid var(--color-border-tertiary);
+        background-color: #ffffff;
+        border: 1px solid var(--color-border-tertiary);
         padding: 16px 20px;
         border-radius: var(--border-radius-md);
         margin-bottom: 20px;
         line-height: 1.6;
         color: var(--color-text-secondary);
     }
+    
+    /* Thesis Boxes with specific top border accent colors */
     .bull-box {
-        border-left: 5px solid #22c55e !important;
-        background-color: rgba(34, 197, 94, 0.05) !important;
+        border-top: 3px solid #22c55e !important;
+        border-left: 1px solid var(--color-border-tertiary) !important;
+        border-right: 1px solid var(--color-border-tertiary) !important;
+        border-bottom: 1px solid var(--color-border-tertiary) !important;
+        border-radius: 0 0 var(--border-radius-md) var(--border-radius-md) !important;
     }
     .bear-box {
-        border-left: 5px solid #ef4444 !important;
-        background-color: rgba(239, 68, 68, 0.05) !important;
+        border-top: 3px solid #ef4444 !important;
+        border-left: 1px solid var(--color-border-tertiary) !important;
+        border-right: 1px solid var(--color-border-tertiary) !important;
+        border-bottom: 1px solid var(--color-border-tertiary) !important;
+        border-radius: 0 0 var(--border-radius-md) var(--border-radius-md) !important;
     }
     .hold-box {
         border-left: 5px solid #fde047 !important;
-        background-color: rgba(253, 224, 71, 0.05) !important;
+        background-color: #fefce8 !important;
+        border-top: 1px solid var(--color-border-tertiary) !important;
+        border-right: 1px solid var(--color-border-tertiary) !important;
+        border-bottom: 1px solid var(--color-border-tertiary) !important;
+        color: #854d0e !important;
+    }
+
+    /* Custom high-fidelity bullet styling for Bull & Bear boxes */
+    .bull-box ul {
+        list-style-type: none !important;
+        padding-left: 0 !important;
+        margin-top: 8px !important;
+    }
+    .bull-box li {
+        font-size: 13px !important;
+        color: var(--color-text-secondary) !important;
+        padding: 6px 0 !important;
+        border-bottom: 0.5px solid var(--color-border-tertiary) !important;
+        position: relative !important;
+        padding-left: 18px !important;
+        line-height: 1.4 !important;
+    }
+    .bull-box li:last-child {
+        border-bottom: none !important;
+    }
+    .bull-box li::before {
+        content: "+" !important;
+        color: #22c55e !important;
+        font-weight: bold !important;
+        position: absolute !important;
+        left: 0 !important;
+        font-size: 15px !important;
+    }
+
+    .bear-box ul {
+        list-style-type: none !important;
+        padding-left: 0 !important;
+        margin-top: 8px !important;
+    }
+    .bear-box li {
+        font-size: 13px !important;
+        color: var(--color-text-secondary) !important;
+        padding: 6px 0 !important;
+        border-bottom: 0.5px solid var(--color-border-tertiary) !important;
+        position: relative !important;
+        padding-left: 18px !important;
+        line-height: 1.4 !important;
+    }
+    .bear-box li:last-child {
+        border-bottom: none !important;
+    }
+    .bear-box li::before {
+        content: "−" !important;
+        color: #ef4444 !important;
+        font-weight: bold !important;
+        position: absolute !important;
+        left: 0 !important;
+        font-size: 15px !important;
+    }
+
+    /* High-fidelity Signal Box layouts to match mock */
+    .signal-card {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .signal-box {
+        flex: 1;
+        border-radius: var(--border-radius-md);
+        padding: 12px 14px;
+        border: 0.5px solid var(--color-border-tertiary);
+    }
+    .signal-box.buy {
+        background: #F0FDF4;
+        border-color: #86EFAC;
+    }
+    .signal-box.hold {
+        background: #FEFCE8;
+        border-color: #FDE047;
+    }
+    .signal-box.sell {
+        background: #FEF2F2;
+        border-color: #FECACA;
+    }
+    .signal-label {
+        font-size: 11px;
+        color: var(--color-text-tertiary);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    .signal-value {
+        font-size: 20px;
+        font-weight: 700;
+    }
+    .signal-value.buy {
+        color: #166534;
+    }
+    .signal-value.hold {
+        color: #854D0E;
+    }
+    .signal-value.sell {
+        color: #991B1B;
     }
 
     ::view-transition-group(*),
@@ -231,24 +352,24 @@ def render_progress(statuses):
     for label, state, time_val in statuses:
         if state == "done":
             html += f"""
-            <div class="progress-item done" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0.5px solid #22c55e; border-radius: 8px; background: #14291c; margin-bottom: 8px; width: 100%;">
-                <div class="prog-icon done" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #22c55e; color: #fff;">✓</div>
-                <span class="prog-label" style="font-size: 14px; color: #ffffff; font-weight: 500; flex: 1;">{label}</span>
-                <span class="prog-time" style="font-size: 12px; color: #8c96a8;">{time_val}</span>
+            <div class="progress-item done" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #bbf7d0; border-radius: 8px; background: #f0fdf4; margin-bottom: 8px; width: 100%;">
+                <div class="prog-icon done" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #22c55e; color: #ffffff;">✓</div>
+                <span class="prog-label" style="font-size: 14px; color: #166534; font-weight: 500; flex: 1;">{label}</span>
+                <span class="prog-time" style="font-size: 12px; color: #15803d; font-weight: 500;">{time_val}</span>
             </div>"""
         elif state == "running":
             html += f"""
-            <div class="progress-item running" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0.5px solid #e24b4a; border-radius: 8px; background: #2a1414; margin-bottom: 8px; width: 100%;">
+            <div class="progress-item running" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; margin-bottom: 8px; width: 100%;">
                 <div class="prog-icon running" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #fee2e2; color: #e24b4a;"><div class="spin" style="display: inline-block; width: 14px; height: 14px; border: 2px solid #fecaca; border-top-color: #e24b4a; border-radius: 50%; animation: spin .7s linear infinite;"></div></div>
-                <span class="prog-label" style="font-size: 14px; color: #ffffff; font-weight: 500; flex: 1;">{label}...</span>
-                <span class="prog-time" style="font-size: 12px; color:#E24B4A; display:flex; align-items:center; gap:5px;"><div class="pulse-ring" style="width: 10px; height: 10px; border-radius: 50%; background: #e24b4a; position: relative;"></div> Live</span>
+                <span class="prog-label" style="font-size: 14px; color: #991B1B; font-weight: 500; flex: 1;">{label}...</span>
+                <span class="prog-time" style="font-size: 12px; color:#E24B4A; display:flex; align-items:center; gap:5px; font-weight: 600;"><div class="pulse-ring" style="width: 8px; height: 8px; border-radius: 50%; background: #e24b4a; position: relative; display: inline-block;"></div> Live</span>
             </div>"""
         else:
             html += f"""
-            <div class="progress-item pending" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0.5px solid #2e3244; border-radius: 8px; background: #151922; margin-bottom: 8px; width: 100%; opacity: 0.5;">
-                <div class="prog-icon pending" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #2e3244; color: #8c96a8;">⬪</div>
-                <span class="prog-label" style="font-size: 14px; color: #ffffff; font-weight: 500; flex: 1;">{label}</span>
-                <span class="prog-time" style="font-size: 12px; color: #8c96a8;">Pending</span>
+            <div class="progress-item pending" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #e5e4dd; border-radius: 8px; background: #f9f8f4; margin-bottom: 8px; width: 100%; opacity: 0.6;">
+                <div class="prog-icon pending" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #e5e4dd; color: #777777;">⬪</div>
+                <span class="prog-label" style="font-size: 14px; color: #444444; font-weight: 500; flex: 1;">{label}</span>
+                <span class="prog-time" style="font-size: 12px; color: #777777;">Pending</span>
             </div>"""
     html += "</div>"
     return html
@@ -264,8 +385,8 @@ def display_chart(data, ticker):
     data['SMA50'] = data['Close'].rolling(window=50).mean()
 
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
-                       vertical_spacing=0.03, subplot_titles=(f'{ticker} Candlestick', 'Volume'), 
-                       row_width=[0.2, 0.7])
+                       vertical_spacing=0.05, 
+                       row_width=[0.2, 0.8])
 
     # Candlestick
     fig.add_trace(go.Candlestick(
@@ -274,23 +395,33 @@ def display_chart(data, ticker):
         high=data['High'],
         low=data['Low'],
         close=data['Close'],
-        name='Price'
+        name='Price',
+        increasing_line_color='#22c55e',
+        decreasing_line_color='#ef4444',
+        increasing_fillcolor='#f0fdf4',
+        decreasing_fillcolor='#fef2f2'
     ), row=1, col=1)
 
     # Moving Averages
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA20'], line=dict(color='orange', width=1), name='SMA 20'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA50'], line=dict(color='cyan', width=1), name='SMA 50'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=data.index, y=data['SMA20'], line=dict(color='#EF9F27', width=1.5), name='SMA 20'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=data.index, y=data['SMA50'], line=dict(color='#1D9E75', width=1.5), name='SMA 50'), row=1, col=1)
 
     # Volume
-    fig.add_trace(go.Bar(x=data.index, y=data['Volume'], name='Volume', marker_color='grey'), row=2, col=1)
+    fig.add_trace(go.Bar(x=data.index, y=data['Volume'], name='Volume', marker_color='#c8c7c0'), row=2, col=1)
 
     fig.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         xaxis_rangeslider_visible=False,
-        height=600,
-        margin=dict(l=10, r=10, t=30, b=10),
-        showlegend=True
+        height=500,
+        margin=dict(l=10, r=10, t=10, b=10),
+        showlegend=True,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#444444', family='Inter, sans-serif')
     )
+    fig.update_xaxes(gridcolor='#e5e4dd', linecolor='#c8c7c0', tickfont=dict(color='#777777'))
+    fig.update_yaxes(gridcolor='#e5e4dd', linecolor='#c8c7c0', tickfont=dict(color='#777777'), side='right')
+    
     st.plotly_chart(fig, use_container_width=True)
 
 # --- LOGO & HEADER ---
@@ -310,22 +441,21 @@ st.divider()
 
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    st.header("🏢 Firm Configuration")
+    st.markdown("### ⚙ FIRM CONFIG")
+    ticker = st.text_input("Ticker symbol", value="RELIANCE.NS", help="e.g. RELIANCE.NS, TCS.NS, SCI.NS")
+    analysis_date = st.date_input("Analysis date", value=date.today())
     
-    ticker = st.text_input("Ticker Symbol", value="RELIANCE.NS", help="e.g. RELIANCE.NS, TCS.NS, SCI.NS")
-    analysis_date = st.date_input("Analysis Date", value=date.today())
-    
-    st.subheader("🤖 Brain Settings")
-    provider = st.selectbox("LLM Provider", ["OpenAI", "Google", "Anthropic", "xAI", "Ollama"])
+    st.markdown("### 🧠 BRAIN SETTINGS")
+    provider = st.selectbox("LLM provider", ["OpenAI", "Google", "Anthropic", "xAI", "Ollama"])
     
     analysts = st.multiselect(
-        "Select Analyst Team",
+        "Analyst team",
         ["Market", "Social", "News", "Fundamentals", "Small Cap & PSU"],
         default=["Market", "News", "Fundamentals"]
     )
     
     depth = st.select_slider(
-        "Research Depth",
+        "Research depth",
         options=["Shallow", "Medium", "Deep"],
         value="Medium"
     )
@@ -333,7 +463,7 @@ with st.sidebar:
     depth_map = {"Shallow": 1, "Medium": 3, "Deep": 5}
     
     st.divider()
-    start_btn = st.button("🚀 Start Intelligence Gathering", use_container_width=True, type="primary")
+    start_btn = st.button("▷ Start intelligence gathering", use_container_width=True, type="primary")
 
 # --- MAIN DASHBOARD ---
 
@@ -341,7 +471,7 @@ with st.sidebar:
 data = fetch_market_data(ticker)
 
 # --- TABS CREATION ---
-main_tabs = st.tabs(["📊 Market Overview", "📡 Agent Progress", "📋 Intelligence Reports", "⚔️ Debate Arena"])
+main_tabs = st.tabs(["Market overview", "Agent progress", "Intelligence reports", "Debate arena"])
 
 # Tab 0: Market Overview
 with main_tabs[0]:
@@ -390,7 +520,7 @@ with main_tabs[0]:
 
 # Tab 1: Agent Progress
 with main_tabs[1]:
-    st.subheader("📡 Real-time Agent Progress")
+    st.subheader("Real-time agent pipeline")
     progress_placeholder = st.empty()
     initial_states = [
         ("Market Analyst", "pending", ""),
@@ -405,7 +535,7 @@ with main_tabs[1]:
 
 # Tab 2: Intelligence Reports
 with main_tabs[2]:
-    st.subheader("📋 Analyst Intelligence Reports")
+    st.subheader("Analyst intelligence reports")
     analyst_tabs = st.tabs(analysts)
     analyst_containers = {analysts[i]: analyst_tabs[i].empty() for i in range(len(analysts))}
     for a in analysts:
@@ -413,20 +543,23 @@ with main_tabs[2]:
 
 # Tab 3: Debate Arena
 with main_tabs[3]:
-    st.subheader("⚔️ Strategy Debate: Bull vs Bear")
+    st.subheader("Bull vs. bear debate arena")
     
     col_s1, col_s2, col_s3 = st.columns(3)
     bull_target_box = col_s1.empty()
     pm_conviction_box = col_s2.empty()
     bear_downside_box = col_s3.empty()
     
-    bull_target_box.metric("Bull Price Target", "—")
-    pm_conviction_box.metric("PM Conviction", "—")
-    bear_downside_box.metric("Bear Downside", "—")
+    bull_target_box.markdown('<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy" style="color: #777777;">—</div></div>', unsafe_allow_html=True)
+    pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold" style="color: #777777;">—</div></div>', unsafe_allow_html=True)
+    bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell" style="color: #777777;">—</div></div>', unsafe_allow_html=True)
     
     st.divider()
     
     debate_col1, debate_col2 = st.columns(2)
+    debate_col1.markdown('<div class="debate-head bull-text" style="color:#166534; font-weight:600; font-size:13px; margin-bottom:8px;">🐂 Bull thesis</div>', unsafe_allow_html=True)
+    debate_col2.markdown('<div class="debate-head bear-text" style="color:#991B1B; font-weight:600; font-size:13px; margin-bottom:8px;">🐻 Bear thesis</div>', unsafe_allow_html=True)
+    
     bull_container = debate_col1.empty()
     bear_container = debate_col2.empty()
     
@@ -435,7 +568,7 @@ with main_tabs[3]:
     
     st.divider()
     
-    st.subheader("⚖️ Final Investment Decision")
+    st.subheader("Final investment decision")
     final_container = st.empty()
     final_container.info("Waiting for final PM decision...")
 
@@ -527,10 +660,10 @@ if start_btn:
                 
                 if debate.get("bull_history"):
                     bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
-                    bull_target_box.metric("Bull Price Target", "₹1,520 (Est)")
+                    bull_target_box.markdown('<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy">₹1,520</div></div>', unsafe_allow_html=True)
                 if debate.get("bear_history"):
                     bear_container.markdown(f'<div class="report-box bear-box"><b>🐻 Bear Researcher</b><br>{debate["bear_history"]}</div>', unsafe_allow_html=True)
-                    bear_downside_box.metric("Bear Downside", "₹1,240 (Est)")
+                    bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">₹1,240</div></div>', unsafe_allow_html=True)
                 if debate.get("judge_decision"):
                     progress_states[3] = ("Bull & Bear Debate", "done", "24s")
                     progress_states[4] = ("AI Trader", "done", "8s")
@@ -543,14 +676,14 @@ if start_btn:
                  progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                  
                  final_decision = chunk['final_trade_decision']
-                 pm_conviction_box.metric("PM Conviction", "62% (Est)")
+                 pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">62%</div></div>', unsafe_allow_html=True)
                  
                  if "BUY" in final_decision.upper():
                      final_container.markdown(f'<div class="report-box bull-box"><h3>🟢 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
                  elif "SELL" in final_decision.upper():
                      final_container.markdown(f'<div class="report-box bear-box"><h3>🔴 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
                  else:
-                     final_container.markdown(f'<div class="report-box" style="border-left: 5px solid #FDE047; background-color: #2b2b16;"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+                     final_container.markdown(f'<div class="report-box hold-box"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
                      
     st.balloons()
     st.success("Analysis Complete!")
