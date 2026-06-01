@@ -19,6 +19,23 @@
 
 ## ⚡ What Makes Orbis Different?
 
+Here's a sharp breakdown of Orbis Quant Agents' USPs and how it differs from just prompting Claude directly.
+
+The core distinction: **Orbis is an architecture, not a prompt.** Asking Claude *"analyse RELIANCE.NS"* gives you one model's best guess. Orbis runs 10+ specialized agents that challenge, verify, and overrule each other — the same stock gets both a bull and a bear case from agents explicitly instructed to disagree.
+
+The fundamental difference is **trust, not intelligence**. When you ask Claude to analyse a stock, you get one model's best attempt — and there's nothing stopping it from confidently presenting a wrong P/E ratio or missing a key risk. Orbis fixes this architecturally: the Bear Researcher's whole job is to find what the Bull got wrong.
+
+### 🏆 The Six USPs (in order of importance)
+
+1. **Structural Hallucination Detection**: The Bull vs. Bear debate loop isn't just for balance. The Bear agent is explicitly scanning the Bull's report for fabricated metrics and unsupported claims. This is the most meaningful thing Orbis does that a prompt cannot.
+2. **Real-Time Data**: Claude's knowledge has a cutoff. Orbis pulls live price data, recent SEBI filings, and current bulk deal activity. The difference between *"Reliance has strong fundamentals"* and *"DII bought ₹420Cr of Reliance stock yesterday"* is what drives actual decisions.
+3. **India-Specific Intelligence**: No other AI tool connects PSU stock analysis to government contract portals. A BEML or BEL investor needs to know about tender wins, not just the balance sheet. This is Orbis's clearest moat.
+4. **An Audit Trail, Not a Chat Message**: Every agent's output is stored in `AgentState`. You can read the Bear's counter-arguments even when the PM issues a BUY. With Claude directly, that reasoning is invisible.
+5. **Cost-Optimised Multi-Model Routing**: You can run the cheap, fast tasks on Gemini Flash and save Claude Sonnet/Opus only for the Portfolio Manager synthesis. Prompting Claude directly means paying full price for every token including the routine data-gathering steps.
+6. **An Actionable Trade Setup**: Orbis outputs Entry Price, Stop-Loss, and R-multiples. Claude gives you a thesis. These are different things — one you can act on, one you have to interpret further.
+
+---
+
 The framework is built around a **"Firm" Architecture**, where specialized agents (Analysts, Researchers, Traders) collaborate to deliver high-conviction investment strategies.
 
 ```mermaid

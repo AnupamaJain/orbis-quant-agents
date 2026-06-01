@@ -51,6 +51,12 @@ st.markdown("""
         border-left: 5px solid #ff4b4b;
         background-color: #2b1616;
     }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation-duration: 0.25s;
+        animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+    }
     </style>
 """, unsafe_allow_html=True)
 
