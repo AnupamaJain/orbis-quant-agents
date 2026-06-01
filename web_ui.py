@@ -27,30 +27,108 @@ st.set_page_config(
 # --- STYLING ---
 st.markdown("""
     <style>
+    /* System variables fallback if not loaded */
+    :root {
+        --color-background-primary: #0e1117;
+        --color-background-secondary: #151922;
+        --color-border-tertiary: #2e3244;
+        --color-border-secondary: #4a4a4a;
+        --color-text-primary: #ffffff;
+        --color-text-secondary: #8c96a8;
+        --color-text-tertiary: #6c7688;
+        --border-radius-md: 8px;
+        --border-radius-lg: 12px;
+    }
+
+    /* Set global font */
+    .main, button, input, select, label {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+
+    /* Main background */
     .main {
-        background-color: #0e1117;
+        background-color: var(--color-background-primary);
     }
-    .stMetric {
-        background-color: #1e2130;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #4a4a4a;
+
+    /* Metric Cards Redesign */
+    div[data-testid="stMetric"] {
+        background-color: var(--color-background-secondary) !important;
+        border: 0.5px solid var(--color-border-tertiary) !important;
+        border-radius: var(--border-radius-md) !important;
+        padding: 12px 16px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
+    div[data-testid="stMetric"] label {
+        font-size: 11px !important;
+        color: var(--color-text-tertiary) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        color: var(--color-text-primary) !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricDelta"] {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+
+    /* Primary Run Button Redesign */
+    div.stButton > button:first-child {
+        background-color: #E24B4A !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: var(--border-radius-md) !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        height: 38px !important;
+        width: 100% !important;
+        box-shadow: 0 4px 6px rgba(226, 75, 74, 0.2) !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+    div.stButton > button:first-child:hover {
+        opacity: 0.9 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 10px rgba(226, 75, 74, 0.3) !important;
+    }
+
+    /* Tabs Styling */
+    button[data-baseweb="tab"] {
+        font-size: 13px !important;
+        color: var(--color-text-secondary) !important;
+        padding: 8px 16px !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #E24B4A !important;
+        border-bottom-color: #E24B4A !important;
+        font-weight: 600 !important;
+    }
+
+    /* Report boxes matching debate cards */
     .report-box {
-        background-color: #1e2130;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #00ff00;
+        background-color: var(--color-background-secondary);
+        border: 0.5px solid var(--color-border-tertiary);
+        padding: 16px 20px;
+        border-radius: var(--border-radius-md);
         margin-bottom: 20px;
+        line-height: 1.6;
+        color: var(--color-text-secondary);
     }
     .bull-box {
-        border-left: 5px solid #00ff00;
-        background-color: #162616;
+        border-left: 5px solid #22c55e !important;
+        background-color: rgba(34, 197, 94, 0.05) !important;
     }
     .bear-box {
-        border-left: 5px solid #ff4b4b;
-        background-color: #2b1616;
+        border-left: 5px solid #ef4444 !important;
+        background-color: rgba(239, 68, 68, 0.05) !important;
     }
+    .hold-box {
+        border-left: 5px solid #fde047 !important;
+        background-color: rgba(253, 224, 71, 0.05) !important;
+    }
+
     ::view-transition-group(*),
     ::view-transition-old(*),
     ::view-transition-new(*) {
