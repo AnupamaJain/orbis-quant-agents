@@ -1,0 +1,372 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:700px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+.sidebar{background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);padding:0;display:flex;flex-direction:column}
+.sidebar-header{padding:14px 16px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:8px}
+.sidebar-header-icon{width:28px;height:28px;background:#E24B4A;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-header span{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.sidebar-section{padding:14px 16px}
+.sidebar-section+.sidebar-section{border-top:0.5px solid var(--color-border-tertiary)}
+.section-label{font-size:11px;font-weight:500;letter-spacing:.04em;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.field-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px;margin-top:10px}
+.field-label:first-of-type{margin-top:0}
+.text-input{width:100%;height:32px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;color:var(--color-text-primary);background:var(--color-background-primary)}
+.select-input{width:100%;height:32px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;color:var(--color-text-primary);background:var(--color-background-primary);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.tags-box{display:flex;flex-wrap:wrap;gap:5px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 8px;background:var(--color-background-primary);min-height:34px}
+.tag{display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:#991B1B;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:500}
+.tag i{font-size:10px;cursor:pointer;opacity:.7}
+.depth-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.depth-label{font-size:12px;color:#E24B4A;font-weight:500;min-width:42px}
+input[type=range]{flex:1;accent-color:#E24B4A}
+.run-btn{margin:14px 16px 16px;width:calc(100% - 32px);height:36px;background:#E24B4A;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.run-btn:hover{opacity:.9}
+.main{display:flex;flex-direction:column}
+.topbar{height:44px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:flex-end;padding:0 16px;gap:8px}
+.topbar-btn{height:28px;padding:0 12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;color:var(--color-text-secondary);background:transparent;cursor:pointer;display:flex;align-items:center;gap:5px}
+.topbar-btn:hover{background:var(--color-background-secondary)}
+.tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);padding:0 20px}
+.tab{padding:10px 0;margin-right:20px;font-size:13px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:color .15s}
+.tab.active{color:#E24B4A;border-bottom-color:#E24B4A;font-weight:500}
+.content{padding:20px;flex:1;overflow:auto}
+.panel{display:none}
+.panel.active{display:block}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.chart-title{font-size:15px;font-weight:500;color:var(--color-text-primary);display:flex;align-items:center;gap:7px}
+.chart-meta{font-size:12px;color:var(--color-text-tertiary)}
+.legend{display:flex;gap:14px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.legend-dot{width:20px;height:2px;border-radius:1px}
+.chart-wrap{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px;background:var(--color-background-primary);margin-bottom:16px}
+canvas{display:block}
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.metric-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.metric-label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:3px}
+.metric-value{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.metric-value.up{color:var(--color-text-success)}
+.metric-value.down{color:var(--color-text-danger)}
+.metric-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+.progress-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.progress-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary)}
+.progress-item.done{border-color:var(--color-border-success);background:var(--color-background-success)}
+.progress-item.running{border-color:#E24B4A;background:#FEF2F2}
+.progress-item.pending{opacity:.55}
+.prog-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.prog-icon.done{background:var(--color-background-success);color:var(--color-text-success)}
+.prog-icon.running{background:#FEE2E2}
+.prog-icon.pending{background:var(--color-background-secondary)}
+.prog-label{font-size:13px;color:var(--color-text-primary);flex:1}
+.prog-time{font-size:11px;color:var(--color-text-tertiary)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #FECACA;border-top-color:#E24B4A;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pulse-ring{width:10px;height:10px;border-radius:50%;background:#E24B4A;position:relative}
+.pulse-ring::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid #E24B4A;opacity:.4;animation:pulse-a 1.4s ease-out infinite}
+@keyframes pulse-a{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.8);opacity:0}}
+.report-tabs{display:flex;gap:0;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden;margin-bottom:14px;width:fit-content}
+.rtab{padding:6px 14px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;background:transparent;border:none;transition:background .1s}
+.rtab.active{background:#E24B4A;color:#fff;font-weight:500}
+.report-content{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:14px;background:var(--color-background-primary);font-size:13px;color:var(--color-text-secondary);line-height:1.6;min-height:120px}
+.report-content p{margin:0 0 8px}
+.report-content p:last-child{margin:0}
+.signal-card{display:flex;gap:12px;margin-bottom:16px}
+.signal-box{flex:1;border-radius:var(--border-radius-md);padding:14px 16px;border:0.5px solid var(--color-border-tertiary)}
+.signal-box.buy{background:#F0FDF4;border-color:#86EFAC}
+.signal-box.hold{background:#FEFCE8;border-color:#FDE047}
+.signal-box.sell{background:#FEF2F2;border-color:#FECACA}
+.signal-label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px}
+.signal-value{font-size:22px;font-weight:500}
+.signal-value.buy{color:#166534}
+.signal-value.hold{color:#854D0E}
+.signal-value.sell{color:#991B1B}
+.debate-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.debate-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px;background:var(--color-background-primary)}
+.debate-card.bull{border-top:3px solid #22C55E;border-radius:0 0 var(--border-radius-md) var(--border-radius-md)}
+.debate-card.bear{border-top:3px solid #EF4444;border-radius:0 0 var(--border-radius-md) var(--border-radius-md)}
+.debate-head{font-size:12px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bull-text{color:#166534}
+.bear-text{color:#991B1B}
+.debate-point{font-size:12px;color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:6px;line-height:1.4}
+.debate-point:last-child{border-bottom:none}
+.dot-bull{color:#22C55E;flex-shrink:0}
+.dot-bear{color:#EF4444;flex-shrink:0}
+</style>
+
+<h2 class="sr-only">Orbis Quant Agents dashboard with firm configuration sidebar, market chart, agent progress, and analyst reports</h2>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-icon"><i class="ti ti-chart-candle" style="color:#fff;font-size:14px" aria-hidden="true"></i></div>
+      <span>Orbis Quant Agents</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label"><i class="ti ti-settings" aria-hidden="true"></i> Firm config</div>
+      <div class="field-label">Ticker symbol</div>
+      <input class="text-input" value="RELIANCE.NS" />
+      <div class="field-label">Analysis date</div>
+      <input class="text-input" type="date" value="2026-06-01" />
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label"><i class="ti ti-brain" aria-hidden="true"></i> Brain settings</div>
+      <div class="field-label">LLM provider</div>
+      <select class="select-input">
+        <option>OpenAI</option>
+        <option>Anthropic</option>
+        <option>Google Gemini</option>
+        <option>Ollama (local)</option>
+      </select>
+      <div class="field-label">Analyst team</div>
+      <div class="tags-box">
+        <span class="tag">Market <i class="ti ti-x"></i></span>
+        <span class="tag">News <i class="ti ti-x"></i></span>
+        <span class="tag">Fundamentals <i class="ti ti-x"></i></span>
+      </div>
+      <div class="field-label">Research depth</div>
+      <div class="depth-row">
+        <input type="range" min="1" max="3" value="2" step="1" id="depth-slider" oninput="updateDepth(this.value)" />
+        <span class="depth-label" id="depth-val">Medium</span>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+    <button class="run-btn" onclick="sendPrompt('Run Orbis Quant analysis for RELIANCE.NS and explain the final decision ↗')">
+      <i class="ti ti-player-play" aria-hidden="true"></i> Start intelligence gathering
+    </button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="topbar-btn"><i class="ti ti-download" style="font-size:13px" aria-hidden="true"></i> Export</button>
+      <button class="topbar-btn"><i class="ti ti-dots-vertical" style="font-size:13px" aria-hidden="true"></i></button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview',this)">Market overview</div>
+      <div class="tab" onclick="switchTab('progress',this)">Agent progress</div>
+      <div class="tab" onclick="switchTab('reports',this)">Intelligence reports</div>
+      <div class="tab" onclick="switchTab('debate',this)">Debate arena</div>
+    </div>
+
+    <div class="content">
+
+      <div class="panel active" id="panel-overview">
+        <div class="metrics-row">
+          <div class="metric-card">
+            <div class="metric-label">Current price</div>
+            <div class="metric-value">₹1,342</div>
+            <div class="metric-sub">RELIANCE.NS</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">1-day change</div>
+            <div class="metric-value down">-1.84%</div>
+            <div class="metric-sub">vs prev close</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">52-week range</div>
+            <div class="metric-value" style="font-size:14px">₹1,285 – ₹1,560</div>
+            <div class="metric-sub">Volume: 11.2M</div>
+          </div>
+        </div>
+
+        <div class="chart-header">
+          <div class="chart-title">
+            <i class="ti ti-chart-line" style="font-size:16px;color:#E24B4A" aria-hidden="true"></i>
+            RELIANCE.NS — price & indicators
+          </div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div> Price</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div> SMA 20</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div> SMA 50</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="priceChart" height="190"></canvas>
+        </div>
+        <div class="chart-header" style="margin-top:8px">
+          <div class="chart-title" style="font-size:13px;font-weight:400;color:var(--color-text-secondary)">Volume</div>
+          <div class="chart-meta">Jul 2025 – Jun 2026</div>
+        </div>
+        <div class="chart-wrap" style="padding:8px 12px">
+          <canvas id="volChart" height="50"></canvas>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-progress">
+        <div style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:7px">
+          <i class="ti ti-radar" style="color:#E24B4A;font-size:16px" aria-hidden="true"></i>
+          Real-time agent pipeline
+        </div>
+        <div class="progress-list">
+          <div class="progress-item done">
+            <div class="prog-icon done"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i></div>
+            <span class="prog-label">Market analyst</span>
+            <span class="prog-time">12s</span>
+          </div>
+          <div class="progress-item done">
+            <div class="prog-icon done"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i></div>
+            <span class="prog-label">News & macro analyst</span>
+            <span class="prog-time">18s</span>
+          </div>
+          <div class="progress-item done">
+            <div class="prog-icon done"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i></div>
+            <span class="prog-label">Fundamentals analyst</span>
+            <span class="prog-time">21s</span>
+          </div>
+          <div class="progress-item running">
+            <div class="prog-icon running"><div class="spin"></div></div>
+            <span class="prog-label">Bull & bear researchers debating...</span>
+            <span class="prog-time" style="color:#E24B4A;display:flex;align-items:center;gap:5px"><div class="pulse-ring"></div> Live</span>
+          </div>
+          <div class="progress-item pending">
+            <div class="prog-icon pending"><i class="ti ti-circle-dashed" style="font-size:14px;color:var(--color-text-tertiary)" aria-hidden="true"></i></div>
+            <span class="prog-label">AI trader</span>
+            <span class="prog-time">Pending</span>
+          </div>
+          <div class="progress-item pending">
+            <div class="prog-icon pending"><i class="ti ti-circle-dashed" style="font-size:14px;color:var(--color-text-tertiary)" aria-hidden="true"></i></div>
+            <span class="prog-label">Risk audit (3 analysts)</span>
+            <span class="prog-time">Pending</span>
+          </div>
+          <div class="progress-item pending">
+            <div class="prog-icon pending"><i class="ti ti-circle-dashed" style="font-size:14px;color:var(--color-text-tertiary)" aria-hidden="true"></i></div>
+            <span class="prog-label">Portfolio manager</span>
+            <span class="prog-time">Pending</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:12px;color:var(--color-text-secondary)">
+          <i class="ti ti-info-circle" style="font-size:14px" aria-hidden="true"></i>
+          3 of 7 agents complete · Est. 2 min 40 sec remaining
+        </div>
+      </div>
+
+      <div class="panel" id="panel-reports">
+        <div style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:7px">
+          <i class="ti ti-report-analytics" style="color:#E24B4A;font-size:16px" aria-hidden="true"></i>
+          Analyst intelligence reports
+        </div>
+        <div class="report-tabs">
+          <button class="rtab active" onclick="switchReport('market',this)">Market</button>
+          <button class="rtab" onclick="switchReport('news',this)">News</button>
+          <button class="rtab" onclick="switchReport('fundamentals',this)">Fundamentals</button>
+        </div>
+        <div class="report-content" id="report-body">
+          <p><strong>Technical bias: Bearish</strong></p>
+          <p>RELIANCE.NS is trading below both its SMA20 (₹1,380) and SMA50 (₹1,415), confirming a medium-term downtrend. RSI at 38 is approaching oversold territory but has not yet triggered a reversal signal. MACD shows persistent bearish divergence since January 2026 peak.</p>
+          <p>Key support: ₹1,285 (52-week low). Key resistance: ₹1,415 (SMA50). Volume has declined on down days, suggesting distribution pressure. Watch for a high-volume close above ₹1,420 to invalidate the bearish thesis.</p>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-debate">
+        <div style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:7px">
+          <i class="ti ti-swords" style="color:#E24B4A;font-size:16px" aria-hidden="true"></i>
+          Bull vs. bear debate arena
+        </div>
+        <div class="signal-card">
+          <div class="signal-box buy">
+            <div class="signal-label">Bull price target</div>
+            <div class="signal-value buy">₹1,520</div>
+          </div>
+          <div class="signal-box hold">
+            <div class="signal-label">PM conviction</div>
+            <div class="signal-value hold">62%</div>
+          </div>
+          <div class="signal-box sell">
+            <div class="signal-label">Bear downside</div>
+            <div class="signal-value sell">₹1,240</div>
+          </div>
+        </div>
+        <div class="debate-row">
+          <div>
+            <div class="debate-head bull-text"><i class="ti ti-trending-up" aria-hidden="true"></i> Bull thesis</div>
+            <div class="debate-card bull">
+              <div class="debate-point"><span class="dot-bull">+</span>Jio & retail segments posting 18% YoY revenue growth, undervalued relative to peers</div>
+              <div class="debate-point"><span class="dot-bull">+</span>O2C margins stabilising; crude correction a tailwind for FY27 margins</div>
+              <div class="debate-point"><span class="dot-bull">+</span>DII buying ₹320Cr bulk deal March 2026 signals institutional re-rating</div>
+            </div>
+          </div>
+          <div>
+            <div class="debate-head bear-text"><i class="ti ti-trending-down" aria-hidden="true"></i> Bear thesis</div>
+            <div class="debate-card bear">
+              <div class="debate-point"><span class="dot-bear">−</span>Price action below SMA50 for 90 days; technical structure firmly bearish</div>
+              <div class="debate-point"><span class="dot-bear">−</span>FII net sellers — ₹1,100Cr outflow Q1 2026; macro headwinds persist</div>
+              <div class="debate-point"><span class="dot-bear">−</span>Debt/equity at 0.42 elevated post-5G capex; FCF tight for next 2 quarters</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:10px 12px;background:#FEFCE8;border:0.5px solid #FDE047;border-radius:var(--border-radius-md);font-size:12px;color:#854D0E">
+          <strong>Research manager verdict:</strong> Bull's growth narrative is credible but the technical structure and FII outflows are material risks. Recommend HOLD pending confirmation of reversal above ₹1,420.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const depths=['Low','Medium','High'];
+function updateDepth(v){document.getElementById('depth-val').textContent=depths[v-1]}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+const reports={
+  market:{bold:'Technical bias: Bearish',body:'RELIANCE.NS is trading below both its SMA20 (₹1,380) and SMA50 (₹1,415), confirming a medium-term downtrend. RSI at 38 is approaching oversold territory. MACD shows persistent bearish divergence since January 2026 peak.<br><br>Key support: ₹1,285. Key resistance: ₹1,415. Volume declining on down days suggests distribution pressure.'},
+  news:{bold:'Macro stance: Cautious',body:'RBI held repo rate at 6.25% in May 2026 meeting — neutral for rate-sensitive sectors. Jio announced tariff revisions effective Q2 FY27, consensus expecting 8–12% ARPU uplift. Global crude at $78/bbl, below Reliance\'s break-even for O2C margin expansion.<br><br>No SEBI penalty or board-level adverse filings in past 90 days.'},
+  fundamentals:{bold:'Financial health: Moderate',body:'FY26E Revenue: ₹9.8L Cr (+7% YoY). EBITDA margin: 16.2% (vs 15.8% prior year). D/E: 0.42 post-5G capex cycle. Promoter holding stable at 50.3%. DII ownership increased 1.2% QoQ — positive signal.<br><br>P/E at 22x is at a 15% discount to its 3-year average of 26x, suggesting mean-reversion potential.'}
+};
+function switchReport(key,el){
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const r=reports[key];
+  document.getElementById('report-body').innerHTML='<p><strong>'+r.bold+'</strong></p><p>'+r.body+'</p>';
+}
+
+const labels=['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+const price=[1445,1420,1390,1385,1470,1510,1555,1530,1440,1390,1350,1342];
+const sma20=[null,null,null,1410,1445,1490,1520,1540,1510,1460,1400,1375];
+const sma50=[null,null,null,null,null,null,1440,1470,1490,1470,1430,1395];
+const vol=[9.2,8.1,7.8,8.5,10.2,11.3,10.8,9.6,8.4,7.9,8.7,11.2];
+
+const txt=getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary')||'#888';
+const border=getComputedStyle(document.documentElement).getPropertyValue('--color-border-tertiary')||'rgba(0,0,0,0.1)';
+
+new Chart(document.getElementById('priceChart'),{
+  type:'line',
+  data:{
+    labels,
+    datasets:[
+      {label:'Price',data:price,borderColor:'#378ADD',borderWidth:2,pointRadius:0,tension:.35,fill:false},
+      {label:'SMA 20',data:sma20,borderColor:'#EF9F27',borderWidth:1.5,pointRadius:0,tension:.35,fill:false,borderDash:[4,3]},
+      {label:'SMA 50',data:sma50,borderColor:'#1D9E75',borderWidth:1.5,pointRadius:0,tension:.35,fill:false,borderDash:[4,3]}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,bodyFont:{size:12},callbacks:{label:ctx=>`${ctx.dataset.label}: ₹${ctx.parsed.y?.toFixed(0)??''}`}}},
+    scales:{
+      x:{grid:{color:border,lineWidth:.5},ticks:{font:{size:11},color:txt}},
+      y:{grid:{color:border,lineWidth:.5},ticks:{font:{size:11},color:txt,callback:v=>'₹'+v},position:'right'}
+    }
+  }
+});
+
+new Chart(document.getElementById('volChart'),{
+  type:'bar',
+  data:{labels,datasets:[{data:vol,backgroundColor:'rgba(55,138,221,0.25)',borderColor:'#378ADD',borderWidth:0.5}]},
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Vol: ${ctx.parsed.y.toFixed(1)}M`}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10},color:txt}},
+      y:{grid:{color:border,lineWidth:.5},ticks:{font:{size:10},color:txt,callback:v=>v+'M'},position:'right'}
+    }
+  }
+});
+</script>
