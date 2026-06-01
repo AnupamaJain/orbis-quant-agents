@@ -74,6 +74,39 @@ st.markdown("""
         text-transform: none !important;
         letter-spacing: normal !important;
     }
+    div.main h2 span, 
+    div.main h3 span,
+    div.main h2 p,
+    div.main h3 p {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Nested Tab Buttons (Analyst Intelligence Reports Sub-Tabs) */
+    div[data-testid="stTabPanel"] div[data-testid="stTabPanel"] button[data-baseweb="tab"] {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* Nested Tab report content styling matching mock */
+    .report-content {
+        font-size: 13px !important;
+        color: var(--color-text-secondary) !important;
+        line-height: 1.6 !important;
+    }
+    .report-content p, .report-content li, .report-content span, .report-content div, .report-content strong {
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+    }
+    .report-content h1, .report-content h2, .report-content h3, .report-content h4 {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        margin-top: 10px !important;
+        margin-bottom: 6px !important;
+        color: var(--color-text-primary) !important;
+    }
+
 
     /* --- SIDEBAR STYLING (LIGHT WARM THEME) --- */
     section[data-testid="stSidebar"] {
@@ -663,29 +696,29 @@ if start_btn:
                     progress_states[0] = ("Market Analyst", "done", "12s")
                     progress_states[1] = ("News & Macro Analyst", "running", "")
                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["Market"].markdown(chunk["market_report"])
+                    analyst_containers["Market"].markdown(f'<div class="report-content">\n\n{chunk["market_report"]}\n\n</div>', unsafe_allow_html=True)
             
             if "news_report" in chunk and chunk["news_report"]:
                 if "News" in analyst_containers:
                     progress_states[1] = ("News & Macro Analyst", "done", "18s")
                     progress_states[2] = ("Fundamentals Analyst", "running", "")
                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["News"].markdown(chunk["news_report"])
+                    analyst_containers["News"].markdown(f'<div class="report-content">\n\n{chunk["news_report"]}\n\n</div>', unsafe_allow_html=True)
             
             if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
                 if "Fundamentals" in analyst_containers:
                     progress_states[2] = ("Fundamentals Analyst", "done", "21s")
                     progress_states[3] = ("Bull & Bear Debate", "running", "")
                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["Fundamentals"].markdown(chunk["fundamentals_report"])
+                    analyst_containers["Fundamentals"].markdown(f'<div class="report-content">\n\n{chunk["fundamentals_report"]}\n\n</div>', unsafe_allow_html=True)
             
             if "sentiment_report" in chunk and chunk["sentiment_report"]:
                 if "Social" in analyst_containers:
-                    analyst_containers["Social"].markdown(chunk["sentiment_report"])
+                    analyst_containers["Social"].markdown(f'<div class="report-content">\n\n{chunk["sentiment_report"]}\n\n</div>', unsafe_allow_html=True)
 
             if "small_cap_report" in chunk and chunk["small_cap_report"]:
                 if "Small Cap & PSU" in analyst_containers:
-                    analyst_containers["Small Cap & PSU"].markdown(chunk["small_cap_report"])
+                    analyst_containers["Small Cap & PSU"].markdown(f'<div class="report-content">\n\n{chunk["small_cap_report"]}\n\n</div>', unsafe_allow_html=True)
 
             if "investment_debate_state" in chunk:
                 debate = chunk["investment_debate_state"]
