@@ -50,7 +50,84 @@ st.markdown("""
         background-color: var(--color-background-primary);
     }
 
-    /* Metric Cards Redesign */
+    /* --- SIDEBAR STYLING --- */
+    section[data-testid="stSidebar"] {
+        background-color: var(--color-background-secondary) !important;
+        border-right: 0.5px solid var(--color-border-tertiary) !important;
+    }
+
+    /* Sidebar headings / section labels */
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h2,
+    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h3 {
+        font-family: 'Inter', sans-serif !important;
+        color: var(--color-text-primary) !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Sidebar widget labels */
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] p {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 12px !important;
+        color: var(--color-text-secondary) !important;
+        margin-bottom: 6px !important;
+        margin-top: 10px !important;
+    }
+
+    /* Sidebar input fields, selectors, and dropdowns */
+    section[data-testid="stSidebar"] div[data-baseweb="input"],
+    section[data-testid="stSidebar"] div[data-baseweb="select"] {
+        background-color: var(--color-background-primary) !important;
+        border: 0.5px solid var(--color-border-secondary) !important;
+        border-radius: var(--border-radius-md) !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="input"] input,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
+        background-color: transparent !important;
+        color: var(--color-text-primary) !important;
+        font-size: 13px !important;
+        border: none !important;
+    }
+
+    /* Custom Multiselect Tags styling to match design red badges */
+    section[data-testid="stSidebar"] span[data-baseweb="tag"] {
+        background-color: #FEE2E2 !important;
+        color: #991B1B !important;
+        border-radius: 4px !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        padding: 2px 6px !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    section[data-testid="stSidebar"] span[data-baseweb="tag"] span {
+        color: #991B1B !important;
+    }
+    section[data-testid="stSidebar"] span[data-baseweb="tag"] svg {
+        fill: #991B1B !important;
+        color: #991B1B !important;
+    }
+
+    /* Sidebar range slider overrides */
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="slider"] {
+        background-color: #E24B4A !important;
+        border: 2px solid #ffffff !important;
+        width: 14px !important;
+        height: 14px !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="presentation"] > div {
+        background-color: #E24B4A !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[data-testid="stWidgetLabel"] + div {
+        margin-top: 4px !important;
+    }
+
+    /* --- METRIC CARDS STYLING --- */
     div[data-testid="stMetric"] {
         background-color: var(--color-background-secondary) !important;
         border: 0.5px solid var(--color-border-tertiary) !important;
