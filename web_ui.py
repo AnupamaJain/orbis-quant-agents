@@ -52,6 +52,29 @@ st.markdown("""
         background-color: var(--color-background-primary) !important;
     }
 
+    /* Main Title Styling Override */
+    div.main h1 {
+        font-size: 24px !important;
+        font-weight: 700 !important;
+        color: var(--color-text-primary) !important;
+        margin-bottom: 2px !important;
+    }
+
+    /* Main Subheadings Styling Override to Match Mockups */
+    div.main h2, 
+    div.main h3, 
+    div.main div[data-testid="stMarkdownContainer"] h2, 
+    div.main div[data-testid="stMarkdownContainer"] h3 {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: var(--color-text-primary) !important;
+        margin-top: 16px !important;
+        margin-bottom: 12px !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }
+
     /* --- SIDEBAR STYLING (LIGHT WARM THEME) --- */
     section[data-testid="stSidebar"] {
         background-color: var(--color-background-secondary) !important;
@@ -75,7 +98,10 @@ st.markdown("""
 
     /* Sidebar widget labels */
     section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] p {
+    section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] p,
+    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] label p,
+    section[data-testid="stSidebar"] label p,
+    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
         font-family: 'Inter', sans-serif !important;
         font-size: 12px !important;
         color: var(--color-text-secondary) !important;
@@ -132,6 +158,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] div[data-testid="stSlider"] span {
         color: #E24B4A !important;
+        font-size: 12px !important;
         font-weight: 500 !important;
     }
 
@@ -151,12 +178,12 @@ st.markdown("""
         font-weight: 600 !important;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        font-size: 22px !important;
-        font-weight: 700 !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
         color: var(--color-text-primary) !important;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricDelta"] {
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: 500 !important;
     }
 
@@ -166,7 +193,7 @@ st.markdown("""
         color: var(--color-text-primary) !important;
         border: 1px solid var(--color-border-secondary) !important;
         border-radius: var(--border-radius-md) !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         font-weight: 600 !important;
         line-height: 1.3 !important;
         padding: 6px 12px !important;
@@ -202,6 +229,7 @@ st.markdown("""
         margin-bottom: 20px;
         line-height: 1.6;
         color: var(--color-text-secondary);
+        font-size: 13px !important;
     }
     
     /* Thesis Boxes with specific top border accent colors */
@@ -226,6 +254,12 @@ st.markdown("""
         border-right: 1px solid var(--color-border-tertiary) !important;
         border-bottom: 1px solid var(--color-border-tertiary) !important;
         color: #854d0e !important;
+        font-size: 12px !important;
+    }
+    .hold-box h3 {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        margin-bottom: 4px !important;
     }
 
     /* Custom high-fidelity bullet styling for Bull & Bear boxes */
@@ -235,7 +269,7 @@ st.markdown("""
         margin-top: 8px !important;
     }
     .bull-box li {
-        font-size: 13px !important;
+        font-size: 12px !important;
         color: var(--color-text-secondary) !important;
         padding: 6px 0 !important;
         border-bottom: 0.5px solid var(--color-border-tertiary) !important;
@@ -261,7 +295,7 @@ st.markdown("""
         margin-top: 8px !important;
     }
     .bear-box li {
-        font-size: 13px !important;
+        font-size: 12px !important;
         color: var(--color-text-secondary) !important;
         padding: 6px 0 !important;
         border-bottom: 0.5px solid var(--color-border-tertiary) !important;
@@ -306,16 +340,16 @@ st.markdown("""
         border-color: #FECACA;
     }
     .signal-label {
-        font-size: 11px;
-        color: var(--color-text-tertiary);
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+        font-size: 11px !important;
+        color: var(--color-text-tertiary) !important;
+        margin-bottom: 4px !important;
+        text-transform: uppercase !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.02em !important;
     }
     .signal-value {
-        font-size: 20px;
-        font-weight: 700;
+        font-size: 22px !important;
+        font-weight: 500 !important;
     }
     .signal-value.buy {
         color: #166534;
