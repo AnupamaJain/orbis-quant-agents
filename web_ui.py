@@ -790,14 +790,26 @@ st.markdown("""
 
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    logo_path = Path("assets/OrbisQuantLogo.png")
-    if logo_path.exists():
-        st.image(str(logo_path), width=50)
-        st.markdown('<div style="font-size: 14px; font-weight: 700; color: #111111; font-family: \'Inter\', sans-serif; margin-top: 6px; line-height: 1.2;">Orbis Quant Agents</div>', unsafe_allow_html=True)
+    import base64
+    logo_file_path = "/Users/admin/MultiTradingAgents/MultiTradingAgent/assets/OrbisQuantLogo.png"
+    logo_base64 = None
+    try:
+        with open(logo_file_path, "rb") as image_file:
+            logo_base64 = base64.b64encode(image_file.read()).decode()
+    except Exception:
+        pass
+        
+    if logo_base64:
+        st.markdown(f"""
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <img src="data:image/png;base64,{logo_base64}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
+                <div style="font-size: 14px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif; line-height: 1.2;">Orbis Quant Agents</div>
+            </div>
+        """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <div style="width: 32px; height: 32px; background: #E24B4A; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; font-family: 'Inter', sans-serif;">🌌</div>
+                <div style="width: 28px; height: 28px; background: #E24B4A; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; font-family: 'Inter', sans-serif;">🌌</div>
                 <div style="font-size: 14px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif; line-height: 1.2;">Orbis Quant Agents</div>
             </div>
         """, unsafe_allow_html=True)
