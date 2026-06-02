@@ -738,39 +738,64 @@ def render_progress(statuses):
     return html
 
 def display_chart(data, ticker):
-    """Render an interactive candlestick chart with indicators."""
+    """Render an interactive line chart with indicators matching the dashboard HTML specs."""
     if data is None:
         st.warning("Could not fetch market data for chart.")
         return
 
-    # Calculate simple SMA
-    data['SMA20'] = data['Close'].rolling(window=20).mean()
-    data['SMA50'] = data['Close'].rolling(window=50).mean()
+    # Extract 1D series safely (handles potential MultiIndexed DataFrames from yfinance)
+    close_series = data['Close']
+    if isinstance(close_series, pd.DataFrame):
+        close_series = close_series.iloc[:, 0]
+    
+    vol_series = data['Volume']
+    if isinstance(vol_series, pd.DataFrame):
+        vol_series = vol_series.iloc[:, 0]
+
+    # Calculate SMAs safely
+    data['SMA20'] = close_series.rolling(window=20).mean()
+    data['SMA50'] = close_series.rolling(window=50).mean()
 
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                        vertical_spacing=0.05, 
                        row_width=[0.2, 0.8])
 
-    # Candlestick
-    fig.add_trace(go.Candlestick(
+    # Price Line (Blue Spline matching HTML)
+    fig.add_trace(go.Scatter(
         x=data.index,
-        open=data['Open'],
-        high=data['High'],
-        low=data['Low'],
-        close=data['Close'],
+        y=close_series,
+        line=dict(color='#378ADD', width=2, shape='spline'),
         name='Price',
-        increasing_line_color='#22c55e',
-        decreasing_line_color='#ef4444',
-        increasing_fillcolor='#f0fdf4',
-        decreasing_fillcolor='#fef2f2'
+        mode='lines'
     ), row=1, col=1)
 
-    # Moving Averages
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA20'], line=dict(color='#D97706', width=1.5), name='SMA 20'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA50'], line=dict(color='#10B981', width=1.5), name='SMA 50'), row=1, col=1)
+    # Moving Averages (Dashed Splines matching HTML)
+    fig.add_trace(go.Scatter(
+        x=data.index,
+        y=data['SMA20'],
+        line=dict(color='#D97706', width=1.5, shape='spline', dash='dash'),
+        name='SMA 20',
+        mode='lines'
+    ), row=1, col=1)
+    
+    fig.add_trace(go.Scatter(
+        x=data.index,
+        y=data['SMA50'],
+        line=dict(color='#10B981', width=1.5, shape='spline', dash='dash'),
+        name='SMA 50',
+        mode='lines'
+    ), row=1, col=1)
 
-    # Volume
-    fig.add_trace(go.Bar(x=data.index, y=data['Volume'], name='Volume', marker_color='#d1d5db'), row=2, col=1)
+    # Volume (Translucent Blue Bars matching HTML)
+    fig.add_trace(go.Bar(
+        x=data.index,
+        y=vol_series,
+        name='Volume',
+        marker=dict(
+            color='rgba(55, 138, 221, 0.25)',
+            line=dict(color='#378ADD', width=0.5)
+        )
+    ), row=2, col=1)
 
     fig.update_layout(
         template="plotly_white",
