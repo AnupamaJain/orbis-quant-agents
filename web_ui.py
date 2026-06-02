@@ -801,25 +801,26 @@ with st.sidebar:
         
     if logo_base64:
         st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <img src="data:image/png;base64,{logo_base64}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
-                <div style="font-size: 14px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif; line-height: 1.2;">Orbis Quant Agents</div>
+            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <img src="data:image/png;base64,{logo_base64}" style="width: 24px; height: 24px; border-radius: 5px; object-fit: cover;" />
+                    <span style="font-size: 13px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif;">Orbis</span>
+                    <span style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
+                </div>
+                <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Firm</div>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <div style="width: 28px; height: 28px; background: #E24B4A; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; font-family: 'Inter', sans-serif;">🌌</div>
-                <div style="font-size: 14px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif; line-height: 1.2;">Orbis Quant Agents</div>
+            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <div style="width: 24px; height: 24px; background: #E24B4A; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; font-family: 'Inter', sans-serif;">🌌</div>
+                    <span style="font-size: 13px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif;">Orbis</span>
+                    <span style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
+                </div>
+                <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Firm</div>
             </div>
         """, unsafe_allow_html=True)
-        
-    st.markdown("""
-        <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
-            <div style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; display: inline-block; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase;">✨ AI Powered</div>
-            <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; margin-top: 4px; line-height: 1.3;">Autonomous Multi-Agent Financial Intelligence Firm</div>
-        </div>
-    """, unsafe_allow_html=True)
     
     st.markdown("### ⚙ FIRM CONFIG")
     ticker = st.text_input("Ticker symbol", value="RELIANCE.NS", help="e.g. RELIANCE.NS, TCS.NS, SCI.NS")
