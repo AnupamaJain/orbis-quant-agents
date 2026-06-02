@@ -1015,6 +1015,9 @@ if start_btn:
     }
     selected_keys = [analyst_map[a] for a in analysts]
     
+    # Dynamic reload of .env to capture any newly added credentials
+    load_dotenv(override=True)
+    
     config = DEFAULT_CONFIG.copy()
     config["max_debate_rounds"] = depth_map[depth]
     config["max_risk_discuss_rounds"] = depth_map[depth]
@@ -1022,8 +1025,26 @@ if start_btn:
     selected_provider = provider.lower()
     config["llm_provider"] = selected_provider
     
-    config["deep_think_llm"] = os.getenv("DEEP_THINK_LLM", config["deep_think_llm"])
-    config["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", config["quick_think_llm"])
+    # Check if the chosen provider matches the provider set in the env
+    env_provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    if selected_provider == env_provider:
+        # Load the custom models configured in the env file for this specific provider
+        config["deep_think_llm"] = os.getenv("DEEP_THINK_LLM", config["deep_think_llm"])
+        config["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", config["quick_think_llm"])
+    else:
+        # Dynamically set standard model defaults for the newly selected provider
+        if selected_provider == "google":
+            config["deep_think_llm"] = "gemini-2.5-pro"
+            config["quick_think_llm"] = "gemini-2.5-flash"
+        elif selected_provider == "ollama":
+            config["deep_think_llm"] = "qwen3:latest"
+            config["quick_think_llm"] = "qwen3:latest"
+        elif selected_provider == "anthropic":
+            config["deep_think_llm"] = "claude-sonnet-4-6"
+            config["quick_think_llm"] = "claude-haiku-4-5-20251001"
+        elif selected_provider == "openai":
+            config["deep_think_llm"] = "gpt-5.4"
+            config["quick_think_llm"] = "gpt-5.4-mini"
     
     if selected_provider != "openai":
         config["backend_url"] = None
