@@ -28,7 +28,7 @@ graph TB
         COND["Conditional Router\n(conditional_logic.py)"]
     end
 
-    subgraph AgentFirm ["🏛️ The Autonomous Firm"]
+    subgraph AgentFirm ["🏛️ The Autonomous Platform"]
         L1["Layer 1: Intelligence\n(5x Analyst Agents)"]
         L2["Layer 2: Debate\n(Bull + Bear Researchers)"]
         L3["Layer 3: Risk Audit\n(3x Risk Analysts)"]

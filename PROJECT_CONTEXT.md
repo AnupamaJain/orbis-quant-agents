@@ -1,9 +1,9 @@
 # Project Context: Orbis Quant Agents
 
 ## 🌌 Project Vision
-**Orbis Quant Agents** is an autonomous, multi-agent financial intelligence firm. It transforms the solitary AI analysis experience into a collaborative, "firm-like" workflow where specialized agents (Analysts, Researchers, Traders) interact, debate, and refine investment strategies.
+**Orbis Quant Agents** is an autonomous, multi-agent financial intelligence platform. It transforms the solitary AI analysis experience into a collaborative, "platform-like" workflow where specialized agents (Analysts, Researchers, Traders) interact, debate, and refine investment strategies.
 
-## 🏛️ Core Architecture: The "Firm" Model
+## 🏛️ Core Architecture: The "Platform" Model
 Every analysis follows a structured path:
 1.  **Analyst Team**: (Market, Social, News, Fundamentals, Small-Cap) - These agents are data gatherers.
 2.  **Researcher Team**: (Bull vs. Bear) - These agents debate the findings to surface risks and opportunities.

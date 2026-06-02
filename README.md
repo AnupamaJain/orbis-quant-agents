@@ -36,7 +36,7 @@ The fundamental difference is **trust, not intelligence**. When you ask Claude t
 
 ---
 
-The framework is built around a **"Firm" Architecture**, where specialized agents (Analysts, Researchers, Traders) collaborate to deliver high-conviction investment strategies.
+The framework is built around a **"Platform" Architecture**, where specialized agents (Analysts, Researchers, Traders) collaborate to deliver high-conviction investment strategies.
 
 ```mermaid
 graph TD
@@ -57,7 +57,10 @@ In addition to the powerful CLI, Orbis Quant Agents now features a **premium Str
 - **Real-time Intelligence Feed**: Watch as agents gather data and analyze tickers in real-time.
 - **Interactive Visualization**: High-performance Plotly charts with technical indicators (SMA, Volume).
 - **The Debate Arena**: Side-by-side view of the Bull vs. Bear strategy debate.
-- **Agent Progress Tracking**: Visual status indicators for every agent in the "Firm".
+- **Agent Progress Tracking**: Visual status indicators for every agent in the "Platform".
+- **Sleek Light Minimalist Design**: Visual alignment featuring cool-light gray backgrounds (`#f3f4f6`), neat card borders, and primary gold-orange branding highlights.
+- **Native Theme Configuration**: Customized native Streamlit configuration (`.streamlit/config.toml`) driving the primary color of slider tracks, handles, active tabs, and selected state labels.
+- **Official Brand Favicon**: Dynamic base64 image logo and browser tab branding powered by `OrbisQuantLogo.png`.
 
 ### 🇮🇳 Indian Market Optimized
 - **Deep-domain awareness**: Optimized for **NSE/BSE** stocks, including automated tracking of RBI policies, Union Budgets, and regional sentiment.
@@ -175,17 +178,17 @@ python main.py
 ## 📦 Integration & Usage
 
 ### Python API
-Initialize the "Firm" directly in your own scripts:
+Initialize the "Platform" directly in your own scripts:
 
 ```python
 from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
 from orbisquantagents.default_config import DEFAULT_CONFIG
 
 # Initialize with default settings
-firm = OrbisQuantAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
+platform = OrbisQuantAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
 
 # Analyze an Indian stock
-_, decision = firm.propagate("RELIANCE.NS", "2026-05-12")
+_, decision = platform.propagate("RELIANCE.NS", "2026-05-12")
 print(f"Final Decision: {decision}")
 ```
 
