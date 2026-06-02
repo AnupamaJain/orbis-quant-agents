@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from PIL import Image
 
 load_dotenv()
 
@@ -16,10 +17,16 @@ from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
 from orbisquantagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 
+# Load logo safely for browser tab
+try:
+    logo_img = Image.open("/Users/admin/MultiTradingAgents/MultiTradingAgent/assets/OrbisQuantLogo.png")
+except Exception:
+    logo_img = "🌌"
+
 # --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Orbis Quant Agents | AI Trading Firm",
-    page_icon="🌌",
+    page_title="Orbis Quant Agents | AI Trading Platform",
+    page_icon=logo_img,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -29,15 +36,15 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    /* System variables fallback to Light Warm Theme */
+    /* System variables fallback to Light Cool Theme */
     :root {
         --color-background-primary: #ffffff;
-        --color-background-secondary: #f4f3ed;
-        --color-border-tertiary: #e5e4dd;
-        --color-border-secondary: #c8c7c0;
-        --color-text-primary: #111111;
-        --color-text-secondary: #444444;
-        --color-text-tertiary: #777777;
+        --color-background-secondary: #f3f4f6;
+        --color-border-tertiary: #e5e7eb;
+        --color-border-secondary: #d1d5db;
+        --color-text-primary: #111827;
+        --color-text-secondary: #4b5563;
+        --color-text-tertiary: #9ca3af;
         --border-radius-md: 8px;
         --border-radius-lg: 12px;
     }
@@ -181,10 +188,11 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Custom Multiselect Tags styling to match design red badges */
+    /* Custom Multiselect Tags styling to match design orange/gold badges */
     section[data-testid="stSidebar"] span[data-baseweb="tag"] {
-        background-color: #FEE2E2 !important;
-        color: #991B1B !important;
+        background-color: #FFFBEB !important;
+        border: 1px solid #FCD34D !important;
+        color: #D97706 !important;
         border-radius: 4px !important;
         font-size: 11px !important;
         font-weight: 500 !important;
@@ -192,31 +200,35 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     section[data-testid="stSidebar"] span[data-baseweb="tag"] span {
-        color: #991B1B !important;
+        color: #D97706 !important;
     }
     section[data-testid="stSidebar"] span[data-baseweb="tag"] svg {
-        fill: #991B1B !important;
-        color: #991B1B !important;
+        fill: #D97706 !important;
+        color: #D97706 !important;
     }
 
     /* Sidebar range slider overrides */
     section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="slider"] {
         background-color: #ffffff !important;
-        border: 1px solid var(--color-border-secondary) !important;
+        border: 2px solid #D97706 !important;
         width: 14px !important;
         height: 14px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
     }
-    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="presentation"] > div {
-        background-color: var(--color-border-secondary) !important;
-    }
     section[data-testid="stSidebar"] div[data-testid="stSlider"] div[data-testid="stWidgetLabel"] + div {
         margin-top: 4px !important;
     }
-    section[data-testid="stSidebar"] div[data-testid="stSlider"] span {
-        color: #E24B4A !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
+    /* Style all slider labels (moving current value, and bottom tick marks) to brand gold-orange */
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] span,
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="presentation"] span,
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] div[role="presentation"] div,
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] [data-baseweb="slider"] ~ div,
+    section[data-testid="stSidebar"] div[data-testid="stSlider"] [data-baseweb="slider"] ~ div div {
+        color: #D97706 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        background-color: transparent !important;
+        background: transparent !important;
     }
 
     /* --- METRIC CARDS STYLING --- */
@@ -261,7 +273,7 @@ st.markdown("""
         transition: all 0.15s ease-in-out !important;
     }
     div.stButton > button:first-child:hover {
-        background-color: #e5e4dd !important;
+        background-color: #e5e7eb !important;
         border-color: var(--color-text-secondary) !important;
     }
 
@@ -272,8 +284,8 @@ st.markdown("""
         padding: 8px 16px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        color: #E24B4A !important;
-        border-bottom-color: #E24B4A !important;
+        color: #D97706 !important;
+        border-bottom-color: #D97706 !important;
         font-weight: 600 !important;
     }
 
@@ -305,12 +317,12 @@ st.markdown("""
         border-radius: 0 0 var(--border-radius-md) var(--border-radius-md) !important;
     }
     .hold-box {
-        border-left: 5px solid #fde047 !important;
-        background-color: #fefce8 !important;
+        border-left: 5px solid #9ca3af !important;
+        background-color: #f9fafb !important;
         border-top: 1px solid var(--color-border-tertiary) !important;
         border-right: 1px solid var(--color-border-tertiary) !important;
         border-bottom: 1px solid var(--color-border-tertiary) !important;
-        color: #854d0e !important;
+        color: #4b5563 !important;
         font-size: 12px !important;
     }
     .hold-box h3 {
@@ -507,10 +519,10 @@ def render_news_desk_html(ticker, raw_news_text):
             
             # Determine sentiment
             sentiment = "NEUTRAL"
-            sentiment_color = "#777777"
-            sentiment_bg = "#f4f3ed"
-            sentiment_border = "#e5e4dd"
-            dot_color = "#c8c7c0"
+            sentiment_color = "#4B5563"
+            sentiment_bg = "#F3F4F6"
+            sentiment_border = "#E5E7EB"
+            dot_color = "#9CA3AF"
             
             upper_title = title.upper()
             if any(k in upper_title for k in ["BULLISH", "POSITIVE", "BUY", "GROWTH", "GAIN", "UPWARD", "UP"]):
@@ -556,10 +568,10 @@ def render_news_desk_html(ticker, raw_news_text):
                 "source": "Press Release",
                 "time": "12m ago",
                 "sentiment": "NEUTRAL",
-                "sentiment_color": "#777777",
-                "sentiment_bg": "#f4f3ed",
-                "sentiment_border": "#e5e4dd",
-                "dot_color": "#c8c7c0"
+                "sentiment_color": "#4B5563",
+                "sentiment_bg": "#F3F4F6",
+                "sentiment_border": "#E5E7EB",
+                "dot_color": "#9CA3AF"
             },
             {
                 "title": f"Technical analysis shows consolidated key support levels for {ticker_name}",
@@ -591,10 +603,10 @@ def render_news_desk_html(ticker, raw_news_text):
     left_feed_html = f"""
     <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 320px;">
         <!-- AI Sentiment Classifier Card -->
-        <div style="background-color: #f9f8f4; border: 0.5px solid #e5e4dd; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="background-color: #f9fafb; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111111;">🤖 AI Sentiment Classifier</div>
-                <div style="font-size: 11px; color: #777777; margin-top: 2px;">Llama-3.1-8b-instant · Groq free tier API</div>
+                <div style="font-size: 11px; color: #6B7280; margin-top: 2px;">Llama-3.1-8b-instant · Groq free tier API</div>
             </div>
             <span style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;">✓ Active</span>
         </div>
@@ -602,18 +614,18 @@ def render_news_desk_html(ticker, raw_news_text):
         <!-- Live News Feed Header and Badges -->
         <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; margin: 5px 0; flex-wrap: wrap;">
             <span style="font-weight: 700; color: #111111;">Live news feed</span>
-            <span style="background: #e5e4dd; color: #444444; font-weight: 600; padding: 2px 6px; border-radius: 4px;">All {len(headlines)}</span>
+            <span style="background: #e5e7eb; color: #4B5563; font-weight: 600; padding: 2px 6px; border-radius: 4px;">All {len(headlines)}</span>
             <span style="background: #f0fdf4; color: #166534; font-weight: 600; padding: 2px 6px; border-radius: 4px;">Bullish {bull_cnt}</span>
             <span style="background: #fef2f2; color: #991B1B; font-weight: 600; padding: 2px 6px; border-radius: 4px;">Bearish {bear_cnt}</span>
         </div>
         
         <!-- News List of Cards -->
         <div style="display: flex; flex-direction: column; gap: 8px;">
-    """
+     """
     
     for h in headlines:
         left_feed_html += f"""
-        <div style="background-color: #ffffff; border: 0.5px solid #e5e4dd; border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+        <div style="background-color: #ffffff; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
             <div style="display: flex; gap: 10px; align-items: flex-start;">
                 <div style="width: 7px; height: 7px; border-radius: 50%; background-color: {h['dot_color']}; margin-top: 5px; flex-shrink: 0;"></div>
                 <div>
@@ -635,15 +647,15 @@ def render_news_desk_html(ticker, raw_news_text):
     right_widgets_html = f"""
     <div style="display: flex; flex-direction: column; gap: 12px; width: 280px; flex-shrink: 0; min-width: 250px;">
         <!-- Market Mood Gauge Widget -->
-        <div style="background-color: #ffffff; border: 0.5px solid #e5e4dd; border-radius: 8px; padding: 12px 14px;">
+        <div style="background-color: #ffffff; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px;">
             <div style="font-size: 12px; font-weight: 700; color: #111111; margin-bottom: 4px;">📈 Market mood</div>
-            <div style="font-size: 11px; color: #777777; margin-bottom: 12px;">Headlines sentiment gauge</div>
+            <div style="font-size: 11px; color: #6B7280; margin-bottom: 12px;">Headlines sentiment gauge</div>
             
-            <div style="height: 6px; border-radius: 3px; background: linear-gradient(to right, #ef4444, #e5e4dd, #22c55e); position: relative; margin: 0 5px 14px;">
+            <div style="height: 6px; border-radius: 3px; background: linear-gradient(to right, #ef4444, #e5e7eb, #22c55e); position: relative; margin: 0 5px 14px;">
                 <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #111111; border: 2px solid #ffffff; position: absolute; top: -2px; left: {mood_pos}%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #777777; font-weight: 600;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #6B7280; font-weight: 600;">
                 <span style="color: #991B1B;">Bearish ({bear_cnt})</span>
                 <span>Neutral ({neutral_cnt})</span>
                 <span style="color: #166534;">Bullish ({bull_cnt})</span>
@@ -651,29 +663,29 @@ def render_news_desk_html(ticker, raw_news_text):
         </div>
         
         <!-- Symbols In News Mentions Widget -->
-        <div style="background-color: #ffffff; border: 0.5px solid #e5e4dd; border-radius: 8px; padding: 12px 14px;">
+        <div style="background-color: #ffffff; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 12px; font-weight: 700; color: #111111;"># Mentions in feed</span>
-                <span style="font-size: 10px; color: #777777;">Mentions</span>
+                <span style="font-size: 10px; color: #6B7280;">Mentions</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #777777; font-weight: 700;">1</span>
+                    <span style="width: 12px; color: #6B7280; font-weight: 700;">1</span>
                     <span style="width: 70px; font-weight: 700; color: #111111;">{ticker.split('.')[0]}</span>
-                    <div style="flex: 1; height: 8px; background-color: #fde047; border-radius: 4px; overflow: hidden; max-width: 120px;"></div>
-                    <span style="color: #777777; font-weight: 600;">8</span>
+                    <div style="flex: 1; height: 8px; background-color: #D97706; border-radius: 4px; overflow: hidden; max-width: 120px;"></div>
+                    <span style="color: #6B7280; font-weight: 600;">8</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #777777; font-weight: 700;">2</span>
+                    <span style="width: 12px; color: #6B7280; font-weight: 700;">2</span>
                     <span style="width: 70px; font-weight: 700; color: #111111;">NIFTY</span>
-                    <div style="flex: 1; height: 8px; background-color: #c8c7c0; border-radius: 4px; overflow: hidden; max-width: 60px;"></div>
-                    <span style="color: #777777; font-weight: 600;">4</span>
+                    <div style="flex: 1; height: 8px; background-color: #d1d5db; border-radius: 4px; overflow: hidden; max-width: 60px;"></div>
+                    <span style="color: #6B7280; font-weight: 600;">4</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #777777; font-weight: 700;">3</span>
+                    <span style="width: 12px; color: #6B7280; font-weight: 700;">3</span>
                     <span style="width: 70px; font-weight: 700; color: #111111;">FII</span>
-                    <div style="flex: 1; height: 8px; background-color: #c8c7c0; border-radius: 4px; overflow: hidden; max-width: 30px;"></div>
-                    <span style="color: #777777; font-weight: 600;">2</span>
+                    <div style="flex: 1; height: 8px; background-color: #d1d5db; border-radius: 4px; overflow: hidden; max-width: 30px;"></div>
+                    <span style="color: #6B7280; font-weight: 600;">2</span>
                 </div>
             </div>
         </div>
@@ -717,10 +729,10 @@ def render_progress(statuses):
             </div>"""
         else:
             html += f"""
-            <div class="progress-item pending" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #e5e4dd; border-radius: 8px; background: #f9f8f4; margin-bottom: 8px; width: 100%; opacity: 0.6;">
-                <div class="prog-icon pending" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #e5e4dd; color: #777777;">⬪</div>
-                <span class="prog-label" style="font-size: 14px; color: #444444; font-weight: 500; flex: 1;">{label}</span>
-                <span class="prog-time" style="font-size: 12px; color: #777777;">Pending</span>
+            <div class="progress-item pending" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; margin-bottom: 8px; width: 100%; opacity: 0.6;">
+                <div class="prog-icon pending" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background: #e5e7eb; color: #6B7280;">⬪</div>
+                <span class="prog-label" style="font-size: 14px; color: #4b5563; font-weight: 500; flex: 1;">{label}</span>
+                <span class="prog-time" style="font-size: 12px; color: #6B7280;">Pending</span>
             </div>"""
     html += "</div>"
     return html
@@ -754,11 +766,11 @@ def display_chart(data, ticker):
     ), row=1, col=1)
 
     # Moving Averages
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA20'], line=dict(color='#EF9F27', width=1.5), name='SMA 20'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data.index, y=data['SMA50'], line=dict(color='#1D9E75', width=1.5), name='SMA 50'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=data.index, y=data['SMA20'], line=dict(color='#D97706', width=1.5), name='SMA 20'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=data.index, y=data['SMA50'], line=dict(color='#10B981', width=1.5), name='SMA 50'), row=1, col=1)
 
     # Volume
-    fig.add_trace(go.Bar(x=data.index, y=data['Volume'], name='Volume', marker_color='#c8c7c0'), row=2, col=1)
+    fig.add_trace(go.Bar(x=data.index, y=data['Volume'], name='Volume', marker_color='#d1d5db'), row=2, col=1)
 
     fig.update_layout(
         template="plotly_white",
@@ -768,22 +780,22 @@ def display_chart(data, ticker):
         showlegend=True,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#444444', family='Inter, sans-serif')
+        font=dict(color='#4b5563', family='Inter, sans-serif')
     )
-    fig.update_xaxes(gridcolor='#e5e4dd', linecolor='#c8c7c0', tickfont=dict(color='#777777'))
-    fig.update_yaxes(gridcolor='#e5e4dd', linecolor='#c8c7c0', tickfont=dict(color='#777777'), side='right')
+    fig.update_xaxes(gridcolor='#e5e7eb', linecolor='#d1d5db', tickfont=dict(color='#6B7280'))
+    fig.update_yaxes(gridcolor='#e5e7eb', linecolor='#d1d5db', tickfont=dict(color='#6B7280'), side='right')
     
     st.plotly_chart(fig, use_container_width=True)
 
 # Sticky top horizontal indices ticker bar
 st.markdown("""
 <div class="top-ticker-bar">
-    <div class="ticker-item"><span class="ticker-name">NIFTY 50</span> <span class="ticker-val">23,330.60</span> <span class="ticker-change down">-0.22%</span></div>
-    <div class="ticker-item"><span class="ticker-name">BANKNIFTY</span> <span class="ticker-val">53,338.75</span> <span class="ticker-change down">-0.57%</span></div>
-    <div class="ticker-item"><span class="ticker-name">FINNIFTY</span> <span class="ticker-val">24,748.20</span> <span class="ticker-change down">-1.04%</span></div>
-    <div class="ticker-item"><span class="ticker-name">MIDCPNIFTY</span> <span class="ticker-val">17,188.15</span> <span class="ticker-change down">-0.53%</span></div>
-    <div class="ticker-item"><span class="ticker-name">INDIA VIX</span> <span class="ticker-val">15.97</span> <span class="ticker-change up">+3.49%</span></div>
-    <div class="ticker-item"><span class="ticker-name">GIFT NIFTY</span> <span class="ticker-val">23,378.00</span> <span class="ticker-change down">-0.28%</span></div>
+    <div class="ticker-item"><span class="ticker-name">NIFTY</span> <span class="ticker-val">23,296.95</span> <span class="ticker-change down">-0.37%</span></div>
+    <div class="ticker-item"><span class="ticker-name">BANKNIFTY</span> <span class="ticker-val">53,241.35</span> <span class="ticker-change down">-0.75%</span></div>
+    <div class="ticker-item"><span class="ticker-name">FINNIFTY</span> <span class="ticker-val">24,707.25</span> <span class="ticker-change down">-1.20%</span></div>
+    <div class="ticker-item"><span class="ticker-name">MIDCPNIFTY</span> <span class="ticker-val">17,162.85</span> <span class="ticker-change down">-0.67%</span></div>
+    <div class="ticker-item"><span class="ticker-name">VIX</span> <span class="ticker-val">16.00</span> <span class="ticker-change up">-3.26%</span></div>
+    <div class="ticker-item"><span class="ticker-name">GIFT</span> <span class="ticker-val">23,348.5</span> <span class="ticker-change down">-0.29%</span></div>
     <div class="ticker-live-badge"><span class="pulse-dot"></span> LIVE</div>
 </div>
 """, unsafe_allow_html=True)
@@ -801,28 +813,28 @@ with st.sidebar:
         
     if logo_base64:
         st.markdown(f"""
-            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
+            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e7eb; margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                     <img src="data:image/png;base64,{logo_base64}" style="width: 24px; height: 24px; border-radius: 5px; object-fit: cover;" />
                     <span style="font-size: 13px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif;">Orbis</span>
-                    <span style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
+                    <span style="font-size: 8px; font-weight: 600; color: #D97706; background: #FFFBEB; border: 1px solid #FCD34D; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
                 </div>
-                <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Firm</div>
+                <div style="font-size: 9px; color: #6B7280; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Platform</div>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
+            <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e7eb; margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                     <div style="width: 24px; height: 24px; background: #E24B4A; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; font-family: 'Inter', sans-serif;">🌌</div>
                     <span style="font-size: 13px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif;">Orbis</span>
-                    <span style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
+                    <span style="font-size: 8px; font-weight: 600; color: #D97706; background: #FFFBEB; border: 1px solid #FCD34D; padding: 1px 4px; border-radius: 3px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; margin-left: 2px;">✨ AI Powered</span>
                 </div>
-                <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Firm</div>
+                <div style="font-size: 9px; color: #6B7280; font-family: 'Inter', sans-serif; line-height: 1.3; margin-top: 4px;">Autonomous Multi-Agent Financial Intelligence Platform</div>
             </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("### ⚙ FIRM CONFIG")
+    st.markdown("### ⚙ PLATFORM CONFIG")
     ticker = st.text_input("Ticker symbol", value="RELIANCE.NS", help="e.g. RELIANCE.NS, TCS.NS, SCI.NS")
     analysis_date = st.date_input("Analysis date", value=date.today())
     
