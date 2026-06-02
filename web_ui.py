@@ -1308,76 +1308,91 @@ if start_btn:
     bear_container.write("")
     final_container.write("")
     
-    with st.spinner(f"Agents are gathering intelligence for {ticker}..."):
-        for chunk in graph.graph.stream(init_state, **args):
-            if "market_report" in chunk and chunk["market_report"]:
-                if "Market" in analyst_containers:
-                    progress_states[0] = ("Market Analyst", "done", "12s")
-                    progress_states[1] = ("News & Macro Analyst", "running", "")
-                    progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["Market"].markdown(f'<div class="report-content">\n\n{chunk["market_report"]}\n\n</div>', unsafe_allow_html=True)
-            
-            if "news_report" in chunk and chunk["news_report"]:
-                if "News" in analyst_containers:
-                    progress_states[1] = ("News & Macro Analyst", "done", "18s")
-                    progress_states[2] = ("Fundamentals Analyst", "running", "")
-                    progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["News"].markdown(
-                        render_news_desk_html(
-                            ticker,
-                            chunk["news_report"],
-                            provider_name=provider,
-                            model_name=config.get("deep_think_llm", get_active_model_name(provider))
-                        ),
-                        unsafe_allow_html=True
-                    )
-            
-            if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
-                if "Fundamentals" in analyst_containers:
-                    progress_states[2] = ("Fundamentals Analyst", "done", "21s")
+    try:
+        with st.spinner(f"Agents are gathering intelligence for {ticker}..."):
+            for chunk in graph.graph.stream(init_state, **args):
+                if "market_report" in chunk and chunk["market_report"]:
+                    if "Market" in analyst_containers:
+                        progress_states[0] = ("Market Analyst", "done", "12s")
+                        progress_states[1] = ("News & Macro Analyst", "running", "")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+                        analyst_containers["Market"].markdown(f'<div class="report-content">\n\n{chunk["market_report"]}\n\n</div>', unsafe_allow_html=True)
+                
+                if "news_report" in chunk and chunk["news_report"]:
+                    if "News" in analyst_containers:
+                        progress_states[1] = ("News & Macro Analyst", "done", "18s")
+                        progress_states[2] = ("Fundamentals Analyst", "running", "")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+                        analyst_containers["News"].markdown(
+                            render_news_desk_html(
+                                ticker,
+                                chunk["news_report"],
+                                provider_name=provider,
+                                model_name=config.get("deep_think_llm", get_active_model_name(provider))
+                            ),
+                            unsafe_allow_html=True
+                        )
+                
+                if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
+                    if "Fundamentals" in analyst_containers:
+                        progress_states[2] = ("Fundamentals Analyst", "done", "21s")
+                        progress_states[3] = ("Bull & Bear Debate", "running", "")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+                        analyst_containers["Fundamentals"].markdown(f'<div class="report-content">\n\n{chunk["fundamentals_report"]}\n\n</div>', unsafe_allow_html=True)
+                
+                if "sentiment_report" in chunk and chunk["sentiment_report"]:
+                    if "Social" in analyst_containers:
+                        analyst_containers["Social"].markdown(f'<div class="report-content">\n\n{chunk["sentiment_report"]}\n\n</div>', unsafe_allow_html=True)
+    
+                if "small_cap_report" in chunk and chunk["small_cap_report"]:
+                    if "Small Cap & PSU" in analyst_containers:
+                        analyst_containers["Small Cap & PSU"].markdown(f'<div class="report-content">\n\n{chunk["small_cap_report"]}\n\n</div>', unsafe_allow_html=True)
+    
+                if "investment_debate_state" in chunk:
+                    debate = chunk["investment_debate_state"]
                     progress_states[3] = ("Bull & Bear Debate", "running", "")
                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["Fundamentals"].markdown(f'<div class="report-content">\n\n{chunk["fundamentals_report"]}\n\n</div>', unsafe_allow_html=True)
-            
-            if "sentiment_report" in chunk and chunk["sentiment_report"]:
-                if "Social" in analyst_containers:
-                    analyst_containers["Social"].markdown(f'<div class="report-content">\n\n{chunk["sentiment_report"]}\n\n</div>', unsafe_allow_html=True)
-
-            if "small_cap_report" in chunk and chunk["small_cap_report"]:
-                if "Small Cap & PSU" in analyst_containers:
-                    analyst_containers["Small Cap & PSU"].markdown(f'<div class="report-content">\n\n{chunk["small_cap_report"]}\n\n</div>', unsafe_allow_html=True)
-
-            if "investment_debate_state" in chunk:
-                debate = chunk["investment_debate_state"]
-                progress_states[3] = ("Bull & Bear Debate", "running", "")
-                progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                
-                if debate.get("bull_history"):
-                    bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
-                    bull_target_box.markdown('<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy">₹1,520</div></div>', unsafe_allow_html=True)
-                if debate.get("bear_history"):
-                    bear_container.markdown(f'<div class="report-box bear-box"><b>🐻 Bear Researcher</b><br>{debate["bear_history"]}</div>', unsafe_allow_html=True)
-                    bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">₹1,240</div></div>', unsafe_allow_html=True)
-                if debate.get("judge_decision"):
-                    progress_states[3] = ("Bull & Bear Debate", "done", "24s")
-                    progress_states[4] = ("AI Trader", "done", "8s")
-                    progress_states[5] = ("Risk Audit", "done", "14s")
-                    progress_states[6] = ("Portfolio Manager", "running", "")
-                    progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-
-            if "final_trade_decision" in chunk and chunk["final_trade_decision"]:
-                 progress_states[6] = ("Portfolio Manager", "done", "9s")
-                 progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                 
-                 final_decision = chunk['final_trade_decision']
-                 pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">62%</div></div>', unsafe_allow_html=True)
-                 
-                 if "BUY" in final_decision.upper():
-                     final_container.markdown(f'<div class="report-box bull-box"><h3>🟢 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
-                 elif "SELL" in final_decision.upper():
-                     final_container.markdown(f'<div class="report-box bear-box"><h3>🔴 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
-                 else:
-                     final_container.markdown(f'<div class="report-box hold-box"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+                    
+                    if debate.get("bull_history"):
+                        bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
+                        bull_target_box.markdown('<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy">₹1,520</div></div>', unsafe_allow_html=True)
+                    if debate.get("bear_history"):
+                        bear_container.markdown(f'<div class="report-box bear-box"><b>🐻 Bear Researcher</b><br>{debate["bear_history"]}</div>', unsafe_allow_html=True)
+                        bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">₹1,240</div></div>', unsafe_allow_html=True)
+                    if debate.get("judge_decision"):
+                        progress_states[3] = ("Bull & Bear Debate", "done", "24s")
+                        progress_states[4] = ("AI Trader", "done", "8s")
+                        progress_states[5] = ("Risk Audit", "done", "14s")
+                        progress_states[6] = ("Portfolio Manager", "running", "")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+    
+                if "final_trade_decision" in chunk and chunk["final_trade_decision"]:
+                     progress_states[6] = ("Portfolio Manager", "done", "9s")
+                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                      
-    st.balloons()
-    st.success("Analysis Complete!")
+                     final_decision = chunk['final_trade_decision']
+                     pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">62%</div></div>', unsafe_allow_html=True)
+                     
+                     if "BUY" in final_decision.upper():
+                         final_container.markdown(f'<div class="report-box bull-box"><h3>🟢 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+                     elif "SELL" in final_decision.upper():
+                         final_container.markdown(f'<div class="report-box bear-box"><h3>🔴 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+                     else:
+                         final_container.markdown(f'<div class="report-box hold-box"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+                         
+        st.balloons()
+        st.success("Analysis Complete!")
+    except Exception as e:
+        err_msg = str(e)
+        if any(k in err_msg.upper() or k in type(e).__name__.upper() for k in ["RESOURCE_EXHAUSTED", "QUOTA", "RATE_LIMIT", "429", "EXCEEDED"]):
+            st.error(
+                f"### 🛑 LLM Provider Quota/Rate Limit Exceeded\n\n"
+                f"The active LLM provider **{provider}** ({config.get('deep_think_llm', '')}) returned a rate limit or quota limit error:\n"
+                f"`{err_msg}`\n\n"
+                f"**To resolve this, you can:**\n"
+                f"1. **Wait a minute** and try again (for transient rate limits).\n"
+                f"2. **Switch the LLM provider** in the sidebar (e.g., select **Ollama** for local free testing, or OpenAI/Anthropic if you have valid API keys).\n"
+                f"3. Check your billing plan and API key quotas at your provider's developer console."
+            )
+        else:
+            st.error(f"### ⚠️ An Error Occurred during Agent Execution\n\n`{err_msg}`")
