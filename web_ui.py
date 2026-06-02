@@ -937,14 +937,9 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
     return combined_html
 
 def fetch_market_data(ticker, period="1y"):
-    """Fetch historical data for the chart using a custom requests session to bypass rate blocks."""
-    import requests
+    """Fetch historical data for the chart using yfinance natively."""
     try:
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        })
-        data = yf.download(ticker, period=period, session=session, auto_adjust=True)
+        data = yf.download(ticker, period=period, auto_adjust=True)
         if data is None or data.empty:
             return None
         return data
