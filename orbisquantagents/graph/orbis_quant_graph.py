@@ -31,7 +31,9 @@ from orbisquantagents.agents.utils.agent_utils import (
     get_news,
     get_insider_transactions,
     get_global_news,
-    get_government_tenders
+    get_government_tenders,
+    get_sebi_filings,
+    get_bulk_block_deals
 )
 
 from .conditional_logic import ConditionalLogic
@@ -188,6 +190,8 @@ class OrbisQuantAgentsGraph:
                     get_balance_sheet,
                     get_cashflow,
                     get_income_statement,
+                    get_sebi_filings,
+                    get_bulk_block_deals,
                 ]
             ),
             "small_cap": ToolNode(
