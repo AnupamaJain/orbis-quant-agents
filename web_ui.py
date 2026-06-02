@@ -503,58 +503,273 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- DATA HELPERS ---
-def render_news_desk_html(ticker, raw_news_text):
+def get_active_model_name(provider_val):
+    provider_lower = provider_val.lower()
+    env_provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    if provider_lower == env_provider:
+        return os.getenv("DEEP_THINK_LLM", "claude-sonnet-4-6")
+    
+    if provider_lower == "google":
+        return "gemini-2.5-pro"
+    elif provider_lower == "ollama":
+        return "qwen3:latest"
+    elif provider_lower == "anthropic":
+        return "claude-sonnet-4-6"
+    elif provider_lower == "openai":
+        return "gpt-5.4"
+    elif provider_lower == "xai":
+        return "grok-beta"
+    return "gpt-5.4"
+
+def markdown_to_html(md_text):
+    if not md_text:
+        return ""
+    
+    import re
+    lines = md_text.strip().split("\n")
+    html_out = []
+    in_list = False
+    in_table = False
+    table_headers = []
+    table_rows = []
+    
+    def format_inline(text):
+        text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+        text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
+        text = re.sub(r'_(.*?)_', r'<em>\1</em>', text)
+        text = re.sub(r'`(.*?)`', r'<code style="background-color: #f3f4f6; color: #1f2937; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.9em;">\1</code>', text)
+        return text
+
+    for line in lines:
+        line_stripped = line.strip()
+        
+        # Table detection
+        if line_stripped.startswith("|") and line_stripped.endswith("|"):
+            if not in_table:
+                if in_list:
+                    html_out.append("</ul>")
+                    in_list = False
+                in_table = True
+                table_headers = [c.strip() for c in line_stripped.split("|")[1:-1]]
+                table_rows = []
+            else:
+                if all(c in "-:| " for c in line_stripped):
+                    continue
+                else:
+                    row_cells = [c.strip() for c in line_stripped.split("|")[1:-1]]
+                    table_rows.append(row_cells)
+            continue
+        else:
+            if in_table:
+                table_html = '<div style="overflow-x: auto; margin: 12px 0;"><table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; border: 0.5px solid #e5e7eb; border-radius: 6px;">'
+                if table_headers:
+                    table_html += '<thead style="background-color: #f9fafb; border-bottom: 1.5px solid #e5e7eb;"><tr>'
+                    for h in table_headers:
+                        table_html += f'<th style="padding: 8px 10px; font-weight: 600; color: #374151;">{format_inline(h)}</th>'
+                    table_html += '</tr></thead>'
+                table_html += '<tbody>'
+                for r in table_rows:
+                    table_html += '<tr style="border-bottom: 0.5px solid #e5e7eb;">'
+                    for cell in r:
+                        table_html += f'<td style="padding: 8px 10px; color: #4b5563;">{format_inline(cell)}</td>'
+                    table_html += '</tr>'
+                table_html += '</tbody></table></div>'
+                html_out.append(table_html)
+                in_table = False
+                table_headers = []
+                table_rows = []
+        
+        # Headers
+        if line_stripped.startswith("#"):
+            if in_list:
+                html_out.append("</ul>")
+                in_list = False
+            level = len(line_stripped) - len(line_stripped.lstrip("#"))
+            title = line_stripped.lstrip("#").strip()
+            title_formatted = format_inline(title)
+            if level == 1:
+                html_out.append(f'<h1 style="font-size: 16px; font-weight: 700; color: #111111; margin: 16px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">{title_formatted}</h1>')
+            elif level == 2:
+                html_out.append(f'<h2 style="font-size: 14px; font-weight: 700; color: #111111; margin: 14px 0 8px;">{title_formatted}</h2>')
+            else:
+                html_out.append(f'<h3 style="font-size: 12px; font-weight: 700; color: #111111; margin: 12px 0 6px;">{title_formatted}</h3>')
+            continue
+            
+        # Lists
+        if line_stripped.startswith(("- ", "* ", "+ ")):
+            if not in_list:
+                html_out.append('<ul style="margin: 6px 0; padding-left: 20px; color: #374151; font-size: 12px; line-height: 1.5;">')
+                in_list = True
+            item_text = line_stripped.lstrip("-*+ ").strip()
+            html_out.append(f'<li style="margin-bottom: 4px;">{format_inline(item_text)}</li>')
+            continue
+        elif in_list:
+            html_out.append("</ul>")
+            in_list = False
+            
+        # Normal paragraphs
+        if line_stripped:
+            html_out.append(f'<p style="font-size: 12px; color: #374151; line-height: 1.5; margin: 8px 0;">{format_inline(line_stripped)}</p>')
+            
+    if in_list:
+        html_out.append("</ul>")
+    if in_table:
+        table_html = '<div style="overflow-x: auto; margin: 12px 0;"><table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; border: 0.5px solid #e5e7eb; border-radius: 6px;">'
+        if table_headers:
+            table_html += '<thead style="background-color: #f9fafb; border-bottom: 1.5px solid #e5e7eb;"><tr>'
+            for h in table_headers:
+                table_html += f'<th style="padding: 8px 10px; font-weight: 600; color: #374151;">{format_inline(h)}</th>'
+            table_html += '</tr></thead>'
+        table_html += '<tbody>'
+        for r in table_rows:
+            table_html += '<tr style="border-bottom: 0.5px solid #e5e7eb;">'
+            for cell in r:
+                table_html += f'<td style="padding: 8px 10px; color: #4b5563;">{format_inline(cell)}</td>'
+            table_html += '</tr>'
+        table_html += '</tbody></table></div>'
+        html_out.append(table_html)
+        
+    return "\n".join(html_out)
+
+def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_name="gpt-5.4"):
     """Render a high-fidelity News Desk Layout tailored to the given ticker, parsing live feed text."""
+    import re
     # Split text into lines
     lines = raw_news_text.strip().split("\n") if raw_news_text else []
     headlines = []
     
-    for line in lines:
-        cleaned = line.strip().lstrip("*- ").strip()
-        if not cleaned:
-            continue
-        # Check if it has enough length to be a valid headline
-        if ":" in cleaned or "**" in cleaned or len(cleaned) > 20:
-            title = cleaned.replace("**", "").replace("###", "").strip()
+    if raw_news_text:
+        for line in lines:
+            line_stripped = line.strip()
             
-            # Determine sentiment
-            sentiment = "NEUTRAL"
-            sentiment_color = "#4B5563"
-            sentiment_bg = "#F3F4F6"
-            sentiment_border = "#E5E7EB"
-            dot_color = "#9CA3AF"
-            
-            upper_title = title.upper()
-            if any(k in upper_title for k in ["BULLISH", "POSITIVE", "BUY", "GROWTH", "GAIN", "UPWARD", "UP"]):
-                sentiment = "BULLISH"
-                sentiment_color = "#166534"
-                sentiment_bg = "#f0fdf4"
-                sentiment_border = "#bbf7d0"
-                dot_color = "#22c55e"
-            elif any(k in upper_title for k in ["BEARISH", "NEGATIVE", "SELL", "RISK", "DROP", "DOWN", "LOSS"]):
-                sentiment = "BEARISH"
-                sentiment_color = "#991B1B"
-                sentiment_bg = "#fef2f2"
-                sentiment_border = "#fecaca"
-                dot_color = "#ef4444"
+            # Skip headers, tables, empty lines
+            if not line_stripped or line_stripped.startswith("#") or line_stripped.startswith("|"):
+                continue
                 
-            headlines.append({
-                "title": title,
-                "source": "Market Wire",
-                "time": "12m ago",
-                "sentiment": sentiment,
-                "sentiment_color": sentiment_color,
-                "sentiment_bg": sentiment_bg,
-                "sentiment_border": sentiment_border,
-                "dot_color": dot_color
-            })
-            
+            # Check if it starts with bullet point or numbered point
+            is_bullet = False
+            cleaned = line_stripped
+            if line_stripped.startswith(("- ", "* ", "+ ")):
+                is_bullet = True
+                cleaned = line_stripped[2:].strip()
+            else:
+                m = re.match(r'^\d+\.\s+(.*)$', line_stripped)
+                if m:
+                    is_bullet = True
+                    cleaned = m.group(1).strip()
+                    
+            if is_bullet:
+                title = ""
+                desc = ""
+                
+                m_bold = re.match(r'^\*\*(.*?)\*\*(.*)$', cleaned)
+                if m_bold:
+                    title = m_bold.group(1).strip()
+                    desc = m_bold.group(2).strip()
+                    desc = desc.lstrip(":- ").strip()
+                else:
+                    if ":" in cleaned:
+                        parts = cleaned.split(":", 1)
+                        title = parts[0].strip()
+                        desc = parts[1].strip()
+                    elif " - " in cleaned:
+                        parts = cleaned.split(" - ", 1)
+                        title = parts[0].strip()
+                        desc = parts[1].strip()
+                    else:
+                        if len(cleaned) > 60:
+                            idx = cleaned.find(" ", 45, 60)
+                            if idx != -1:
+                                title = cleaned[:idx].strip()
+                                desc = cleaned[idx:].strip()
+                            else:
+                                title = cleaned[:50].strip() + "..."
+                                desc = cleaned
+                        else:
+                            title = cleaned
+                            desc = ""
+                
+                if title:
+                    sentiment = "NEUTRAL"
+                    sentiment_color = "#4B5563"
+                    sentiment_bg = "#F3F4F6"
+                    sentiment_border = "#E5E7EB"
+                    dot_color = "#9CA3AF"
+                    
+                    upper_text = (title + " " + desc).upper()
+                    if any(k in upper_text for k in ["BULLISH", "POSITIVE", "BUY", "GROWTH", "GAIN", "UPWARD", "UP", "SURGE", "EXPAND"]):
+                        sentiment = "BULLISH"
+                        sentiment_color = "#166534"
+                        sentiment_bg = "#f0fdf4"
+                        sentiment_border = "#bbf7d0"
+                        dot_color = "#22c55e"
+                    elif any(k in upper_text for k in ["BEARISH", "NEGATIVE", "SELL", "RISK", "DROP", "DOWN", "LOSS", "FALL", "DECLINE"]):
+                        sentiment = "BEARISH"
+                        sentiment_color = "#991B1B"
+                        sentiment_bg = "#fef2f2"
+                        sentiment_border = "#fecaca"
+                        dot_color = "#ef4444"
+                    
+                    title_html = f"<strong>{title}</strong>"
+                    if desc:
+                        title_html += f" · <span style='font-weight: 400; color: #4b5563;'>{desc}</span>"
+                        
+                    headlines.append({
+                        "title": title_html,
+                        "source": "Market Wire",
+                        "time": "12m ago",
+                        "sentiment": sentiment,
+                        "sentiment_color": sentiment_color,
+                        "sentiment_bg": sentiment_bg,
+                        "sentiment_border": sentiment_border,
+                        "dot_color": dot_color
+                    })
+                    
+        # Fallback to lines if no bullets parsed
+        if not headlines:
+            for line in lines:
+                line_stripped = line.strip()
+                if not line_stripped or line_stripped.startswith("#") or line_stripped.startswith("|") or len(line_stripped) < 15:
+                    continue
+                
+                title = line_stripped
+                sentiment = "NEUTRAL"
+                sentiment_color = "#4B5563"
+                sentiment_bg = "#F3F4F6"
+                sentiment_border = "#E5E7EB"
+                dot_color = "#9CA3AF"
+                
+                upper_text = title.upper()
+                if any(k in upper_text for k in ["BULLISH", "POSITIVE", "BUY", "GROWTH", "GAIN", "UPWARD", "UP", "SURGE", "EXPAND"]):
+                    sentiment = "BULLISH"
+                    sentiment_color = "#166534"
+                    sentiment_bg = "#f0fdf4"
+                    sentiment_border = "#bbf7d0"
+                    dot_color = "#22c55e"
+                elif any(k in upper_text for k in ["BEARISH", "NEGATIVE", "SELL", "RISK", "DROP", "DOWN", "LOSS", "FALL", "DECLINE"]):
+                    sentiment = "BEARISH"
+                    sentiment_color = "#991B1B"
+                    sentiment_bg = "#fef2f2"
+                    sentiment_border = "#fecaca"
+                    dot_color = "#ef4444"
+                    
+                headlines.append({
+                    "title": title,
+                    "source": "Market Wire",
+                    "time": "12m ago",
+                    "sentiment": sentiment,
+                    "sentiment_color": sentiment_color,
+                    "sentiment_bg": sentiment_bg,
+                    "sentiment_border": sentiment_border,
+                    "dot_color": dot_color
+                })
+
     # Fallback to realistic context headlines if none parsed from live stream yet
     if not headlines:
         ticker_name = ticker.split('.')[0]
         headlines = [
             {
-                "title": f"Institutional buyers acquire bulk blocks in {ticker_name} amid stable outlook",
+                "title": f"<strong>Institutional buyers acquire bulk blocks</strong> · <span style='font-weight: 400; color: #4b5563;'>Institutional buyers acquire bulk blocks in {ticker_name} amid stable outlook</span>",
                 "source": "Exchange Feed",
                 "time": "5m ago",
                 "sentiment": "BULLISH",
@@ -564,7 +779,7 @@ def render_news_desk_html(ticker, raw_news_text):
                 "dot_color": "#22c55e"
             },
             {
-                "title": f"{ticker_name} announces standard structural expansion plans starting next quarter",
+                "title": f"<strong>Standard structural expansion plans</strong> · <span style='font-weight: 400; color: #4b5563;'>{ticker_name} announces standard structural expansion plans starting next quarter</span>",
                 "source": "Press Release",
                 "time": "12m ago",
                 "sentiment": "NEUTRAL",
@@ -574,7 +789,7 @@ def render_news_desk_html(ticker, raw_news_text):
                 "dot_color": "#9CA3AF"
             },
             {
-                "title": f"Technical analysis shows consolidated key support levels for {ticker_name}",
+                "title": f"<strong>Consolidated key support levels</strong> · <span style='font-weight: 400; color: #4b5563;'>Technical analysis shows consolidated key support levels for {ticker_name}</span>",
                 "source": "Technical Analyst",
                 "time": "25m ago",
                 "sentiment": "BULLISH",
@@ -584,7 +799,7 @@ def render_news_desk_html(ticker, raw_news_text):
                 "dot_color": "#22c55e"
             },
             {
-                "title": f"Macro headwinds indicate potential margin distribution pressure in industry sector",
+                "title": f"<strong>Macro headwinds indicate pressure</strong> · <span style='font-weight: 400; color: #4b5563;'>Macro headwinds indicate potential margin distribution pressure in industry sector</span>",
                 "source": "Sector Wire",
                 "time": "45m ago",
                 "sentiment": "BEARISH",
@@ -599,6 +814,12 @@ def render_news_desk_html(ticker, raw_news_text):
     bear_cnt = sum(1 for h in headlines if h["sentiment"] == "BEARISH")
     neutral_cnt = len(headlines) - bull_cnt - bear_cnt
     
+    provider_formatted = provider_name.capitalize()
+    if provider_formatted == "Openai":
+        provider_formatted = "OpenAI"
+    elif provider_formatted == "Xai":
+        provider_formatted = "xAI"
+        
     # Left Feed Box (HTML)
     left_feed_html = f"""
     <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 320px;">
@@ -606,7 +827,7 @@ def render_news_desk_html(ticker, raw_news_text):
         <div style="background-color: #f9fafb; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111111;">🤖 AI Sentiment Classifier</div>
-                <div style="font-size: 11px; color: #6B7280; margin-top: 2px;">Llama-3.1-8b-instant · Groq free tier API</div>
+                <div style="font-size: 11px; color: #6B7280; margin-top: 2px;">{model_name} · {provider_formatted} API</div>
             </div>
             <span style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;">✓ Active</span>
         </div>
@@ -692,10 +913,25 @@ def render_news_desk_html(ticker, raw_news_text):
     </div>
     """
     
+    detailed_report_html = ""
+    if raw_news_text:
+        converted_body = markdown_to_html(raw_news_text)
+        detailed_report_html = f"""
+        <div style="margin-top: 28px; border-top: 1px solid #e5e7eb; padding-top: 20px; width: 100%;">
+            <div style="font-size: 14px; font-weight: 700; color: #111111; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                <span>📋</span> News & Macro Analyst Detailed Report
+            </div>
+            <div class="detailed-report-box" style="background-color: #ffffff; border: 0.5px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; font-family: 'Inter', sans-serif;">
+                {converted_body}
+            </div>
+        </div>
+        """
+        
     combined_html = f"""
-    <div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap;">
+    <div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap; font-family: 'Inter', sans-serif;">
         {left_feed_html}
         {right_widgets_html}
+        {detailed_report_html}
     </div>
     """
     return combined_html
@@ -963,7 +1199,15 @@ with main_tabs[2]:
     analyst_containers = {analysts[i]: analyst_tabs[i].empty() for i in range(len(analysts))}
     for a in analysts:
         if a == "News":
-            analyst_containers[a].markdown(render_news_desk_html(ticker, ""), unsafe_allow_html=True)
+            analyst_containers[a].markdown(
+                render_news_desk_html(
+                    ticker,
+                    "",
+                    provider_name=provider,
+                    model_name=get_active_model_name(provider)
+                ),
+                unsafe_allow_html=True
+            )
         else:
             analyst_containers[a].info("Waiting for analysis to start...")
 
@@ -1083,7 +1327,15 @@ if start_btn:
                     progress_states[1] = ("News & Macro Analyst", "done", "18s")
                     progress_states[2] = ("Fundamentals Analyst", "running", "")
                     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                    analyst_containers["News"].markdown(render_news_desk_html(ticker, chunk["news_report"]), unsafe_allow_html=True)
+                    analyst_containers["News"].markdown(
+                        render_news_desk_html(
+                            ticker,
+                            chunk["news_report"],
+                            provider_name=provider,
+                            model_name=config.get("deep_think_llm", get_active_model_name(provider))
+                        ),
+                        unsafe_allow_html=True
+                    )
             
             if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
                 if "Fundamentals" in analyst_containers:
