@@ -775,21 +775,6 @@ def display_chart(data, ticker):
     
     st.plotly_chart(fig, use_container_width=True)
 
-# --- LOGO & HEADER ---
-col1, col2 = st.columns([1, 10])
-with col1:
-    logo_path = Path("assets/OrbisQuantLogo.png")
-    if logo_path.exists():
-        st.image(str(logo_path), width=60)
-    else:
-        st.markdown('<h1 style="font-size: 32px; margin: 0; color: #E24B4A; font-family: \'Inter\', sans-serif;">🌌</h1>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown('<h1 style="font-size: 20px; font-weight: 700; color: #111111; margin: 0; padding-top: 5px; font-family: \'Inter\', sans-serif; letter-spacing: -0.02em;">Orbis Quant Agents</h1>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 12px; color: #777777; font-family: \'Inter\', sans-serif; margin-top: 1px;"><b>✨ AI Powered</b> | <i>Autonomous Multi-Agent Financial Intelligence Firm</i></div>', unsafe_allow_html=True)
-
-st.divider()
-
 # Sticky top horizontal indices ticker bar
 st.markdown("""
 <div class="top-ticker-bar">
@@ -805,13 +790,22 @@ st.markdown("""
 
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    st.markdown("""
-        <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
-            <div style="width: 30px; height: 30px; background: #E24B4A; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; font-family: 'Inter', sans-serif;">🌌</div>
-            <div>
-                <div style="font-size: 13px; font-weight: 700; color: #111111; line-height: 1.1; font-family: 'Inter', sans-serif;">Orbis</div>
-                <div style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 2px; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase;">✨ AI POWERED</div>
+    logo_path = Path("assets/OrbisQuantLogo.png")
+    if logo_path.exists():
+        st.image(str(logo_path), width=50)
+        st.markdown('<div style="font-size: 14px; font-weight: 700; color: #111111; font-family: \'Inter\', sans-serif; margin-top: 6px; line-height: 1.2;">Orbis Quant Agents</div>', unsafe_allow_html=True)
+    else:
+        st.markdown("""
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <div style="width: 32px; height: 32px; background: #E24B4A; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; font-family: 'Inter', sans-serif;">🌌</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111111; font-family: 'Inter', sans-serif; line-height: 1.2;">Orbis Quant Agents</div>
             </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("""
+        <div style="padding-bottom: 12px; border-bottom: 1.5px solid #e5e4dd; margin-bottom: 16px;">
+            <div style="font-size: 8px; font-weight: 600; color: #991B1B; background: #FEE2E2; padding: 1px 4px; border-radius: 3px; display: inline-block; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; text-transform: uppercase;">✨ AI Powered</div>
+            <div style="font-size: 9px; color: #777777; font-family: 'Inter', sans-serif; margin-top: 4px; line-height: 1.3;">Autonomous Multi-Agent Financial Intelligence Firm</div>
         </div>
     """, unsafe_allow_html=True)
     
