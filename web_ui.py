@@ -83,6 +83,24 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
+    /* Clean custom Tab Section Header styled block to perfectly match mock */
+    .tab-section-header {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: var(--color-text-primary) !important;
+        margin-bottom: 12px !important;
+        margin-top: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 7px !important;
+    }
+    .tab-section-header span, .tab-section-header i {
+        color: #E24B4A !important;
+        font-size: 16px !important;
+        font-style: normal !important;
+    }
+
     /* Nested Tab Buttons (Analyst Intelligence Reports Sub-Tabs) */
     div[data-testid="stTabPanel"] div[data-testid="stTabPanel"] button[data-baseweb="tab"] {
         font-size: 12px !important;
@@ -108,6 +126,7 @@ st.markdown("""
     }
 
 
+
     /* --- SIDEBAR STYLING (LIGHT WARM THEME) --- */
     section[data-testid="stSidebar"] {
         background-color: var(--color-background-secondary) !important;
@@ -118,7 +137,11 @@ st.markdown("""
     section[data-testid="stSidebar"] h2, 
     section[data-testid="stSidebar"] h3,
     section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h2,
-    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h3 {
+    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] h3,
+    section[data-testid="stSidebar"] h3 span,
+    section[data-testid="stSidebar"] h3 p,
+    section[data-testid="stSidebar"] h2 span,
+    section[data-testid="stSidebar"] h2 p {
         font-family: 'Inter', sans-serif !important;
         color: var(--color-text-tertiary) !important;
         font-size: 11px !important;
@@ -128,6 +151,7 @@ st.markdown("""
         margin-bottom: 12px !important;
         margin-top: 15px !important;
     }
+
 
     /* Sidebar widget labels */
     section[data-testid="stSidebar"] label,
@@ -492,17 +516,17 @@ def display_chart(data, ticker):
     st.plotly_chart(fig, use_container_width=True)
 
 # --- LOGO & HEADER ---
-col1, col2 = st.columns([1, 5])
+col1, col2 = st.columns([1, 10])
 with col1:
     logo_path = Path("assets/OrbisQuantLogo.png")
     if logo_path.exists():
-        st.image(str(logo_path), width=100)
+        st.image(str(logo_path), width=60)
     else:
-        st.markdown("# 🌌")
+        st.markdown('<h1 style="font-size: 32px; margin: 0; color: #E24B4A; font-family: \'Inter\', sans-serif;">🌌</h1>', unsafe_allow_html=True)
 
 with col2:
-    st.title("Orbis Quant Agents")
-    st.markdown("**✨ AI Powered** | *Autonomous Multi-Agent Financial Intelligence Firm*")
+    st.markdown('<h1 style="font-size: 20px; font-weight: 700; color: #111111; margin: 0; padding-top: 5px; font-family: \'Inter\', sans-serif; letter-spacing: -0.02em;">Orbis Quant Agents</h1>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size: 12px; color: #777777; font-family: \'Inter\', sans-serif; margin-top: 1px;"><b>✨ AI Powered</b> | <i>Autonomous Multi-Agent Financial Intelligence Firm</i></div>', unsafe_allow_html=True)
 
 st.divider()
 
@@ -587,7 +611,7 @@ with main_tabs[0]:
 
 # Tab 1: Agent Progress
 with main_tabs[1]:
-    st.subheader("Real-time agent pipeline")
+    st.markdown('<div class="tab-section-header">📡 Real-time agent pipeline</div>', unsafe_allow_html=True)
     progress_placeholder = st.empty()
     initial_states = [
         ("Market Analyst", "pending", ""),
@@ -602,7 +626,7 @@ with main_tabs[1]:
 
 # Tab 2: Intelligence Reports
 with main_tabs[2]:
-    st.subheader("Analyst intelligence reports")
+    st.markdown('<div class="tab-section-header">📋 Analyst intelligence reports</div>', unsafe_allow_html=True)
     analyst_tabs = st.tabs(analysts)
     analyst_containers = {analysts[i]: analyst_tabs[i].empty() for i in range(len(analysts))}
     for a in analysts:
@@ -610,7 +634,7 @@ with main_tabs[2]:
 
 # Tab 3: Debate Arena
 with main_tabs[3]:
-    st.subheader("Bull vs. bear debate arena")
+    st.markdown('<div class="tab-section-header">⚔️ Bull vs. bear debate arena</div>', unsafe_allow_html=True)
     
     col_s1, col_s2, col_s3 = st.columns(3)
     bull_target_box = col_s1.empty()
@@ -635,7 +659,7 @@ with main_tabs[3]:
     
     st.divider()
     
-    st.subheader("Final investment decision")
+    st.markdown('<div class="tab-section-header">⚖️ Final investment decision</div>', unsafe_allow_html=True)
     final_container = st.empty()
     final_container.info("Waiting for final PM decision...")
 
