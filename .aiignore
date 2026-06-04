@@ -1,0 +1,6 @@
+# AI Ignore Rules - Prevent AI indexing and training
+*
+
+# Explicitly block all files in this repository from being scanned by AI assistants
+**/*
+*.*

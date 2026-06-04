@@ -1,0 +1,2 @@
+# Prevent GitHub Copilot from indexing or referencing any files in this repository
+* -copilot
