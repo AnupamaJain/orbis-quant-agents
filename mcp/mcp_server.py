@@ -6,23 +6,25 @@ Exposes the multi-agent analysis pipeline as MCP tools so any MCP client
 full AI-powered stock analysis with a single tool call.
 
 Usage:
-  python mcp_server.py                     # stdio transport (Claude Code)
-  python mcp_server.py --transport sse     # SSE transport (HTTP clients)
+  python mcp/mcp_server.py                     # stdio transport (Claude Code)
+  python mcp/mcp_server.py --transport sse     # SSE transport (HTTP clients)
 
 Register in Claude Code (.claude/settings.json):
   {
     "mcpServers": {
       "orbis-quant-agents": {
         "command": "python",
-        "args": ["/path/to/orbis-quant-agents/mcp_server.py"]
+        "args": ["/path/to/orbis-quant-agents/mcp/mcp_server.py"]
       }
     }
   }
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import asyncio
 import json
-import sys
 import os
 from datetime import date, datetime
 from typing import Optional

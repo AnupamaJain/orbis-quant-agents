@@ -1,6 +1,9 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
 from orbisquantagents.default_config import DEFAULT_CONFIG
-
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
