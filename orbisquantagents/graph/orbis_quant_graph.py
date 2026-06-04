@@ -18,6 +18,12 @@ from orbisquantagents.agents.utils.agent_states import (
     InvestDebateState,
     RiskDebateState,
 )
+from orbisquantagents.compliance import (
+    generate_session_id,
+    get_execution_timestamp,
+    data_sources_var,
+    append_audit_log,
+)
 from orbisquantagents.dataflows.config import set_config
 
 # Import the new abstract tool methods from agent_utils
@@ -208,26 +214,43 @@ class OrbisQuantAgentsGraph:
 
         self.ticker = company_name
 
+        session_id = generate_session_id()
+        execution_timestamp = get_execution_timestamp()
+
         # Initialize state
         init_agent_state = self.propagator.create_initial_state(
             company_name, trade_date
         )
+        init_agent_state["session_id"] = session_id
+        init_agent_state["execution_timestamp"] = execution_timestamp
+        init_agent_state["data_sources"] = {}
+
         args = self.propagator.get_graph_args()
 
-        if self.debug:
-            # Debug mode with tracing
-            trace = []
-            for chunk in self.graph.stream(init_agent_state, **args):
-                if len(chunk["messages"]) == 0:
-                    pass
-                else:
-                    chunk["messages"][-1].pretty_print()
-                    trace.append(chunk)
+        token = data_sources_var.set({})
+        try:
+            if self.debug:
+                # Debug mode with tracing
+                trace = []
+                for chunk in self.graph.stream(init_agent_state, **args):
+                    if len(chunk["messages"]) == 0:
+                        pass
+                    else:
+                        chunk["messages"][-1].pretty_print()
+                        trace.append(chunk)
 
-            final_state = trace[-1]
-        else:
-            # Standard mode without tracing
-            final_state = self.graph.invoke(init_agent_state, **args)
+                final_state = trace[-1]
+            else:
+                # Standard mode without tracing
+                final_state = self.graph.invoke(init_agent_state, **args)
+        finally:
+            captured_sources = data_sources_var.get()
+            data_sources_var.reset(token)
+
+        # Store compliance metadata in final state
+        final_state["session_id"] = session_id
+        final_state["execution_timestamp"] = execution_timestamp
+        final_state["data_sources"] = captured_sources or {}
 
         # Store current state for reflection
         self.curr_state = final_state
@@ -239,15 +262,18 @@ class OrbisQuantAgentsGraph:
         return final_state, self.process_signal(final_state["final_trade_decision"])
 
     def _log_state(self, trade_date, final_state):
-        """Log the final state to a JSON file."""
+        """Log the final state to a JSON file and cryptographic audit trail."""
         self.log_states_dict[str(trade_date)] = {
             "company_of_interest": final_state["company_of_interest"],
             "trade_date": final_state["trade_date"],
-            "market_report": final_state["market_report"],
-            "sentiment_report": final_state["sentiment_report"],
-            "news_report": final_state["news_report"],
-            "fundamentals_report": final_state["fundamentals_report"],
-            "small_cap_report": final_state["small_cap_report"],
+            "session_id": final_state.get("session_id", ""),
+            "execution_timestamp": final_state.get("execution_timestamp", ""),
+            "data_sources": final_state.get("data_sources", {}),
+            "market_report": final_state.get("market_report", ""),
+            "sentiment_report": final_state.get("sentiment_report", ""),
+            "news_report": final_state.get("news_report", ""),
+            "fundamentals_report": final_state.get("fundamentals_report", ""),
+            "small_cap_report": final_state.get("small_cap_report", ""),
             "investment_debate_state": {
                 "bull_history": final_state["investment_debate_state"]["bull_history"],
                 "bear_history": final_state["investment_debate_state"]["bear_history"],
@@ -278,6 +304,14 @@ class OrbisQuantAgentsGraph:
         log_path = directory / f"full_states_log_{trade_date}.json"
         with open(log_path, "w", encoding="utf-8") as f:
             json.dump(self.log_states_dict[str(trade_date)], f, indent=4)
+
+        # Save to append-only cryptographically chained audit log
+        append_audit_log(
+            ticker=self.ticker,
+            trade_date=str(trade_date),
+            log_entry=self.log_states_dict[str(trade_date)],
+            results_dir=self.config["results_dir"]
+        )
 
     def reflect_and_remember(self, returns_losses):
         """Reflect on decisions and update memory based on returns."""

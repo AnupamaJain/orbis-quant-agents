@@ -49,6 +49,7 @@ class MessageBuffer:
         "Portfolio Management": ["Portfolio Manager"],
     }
 
+    ANALYST_MAPPING = {
         "market": "Market Analyst",
         "social": "Social Analyst",
         "news": "News Analyst",
@@ -730,8 +731,18 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
 
     # Write consolidated report
-    header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-    (save_path / "complete_report.md").write_text(header + "\n\n".join(sections))
+    session_id = final_state.get("session_id", "N/A")
+    execution_timestamp = final_state.get("execution_timestamp", "N/A")
+
+    from orbisquantagents.compliance import SEBI_DISCLAIMER
+    header = (
+        f"# Trading Analysis Report: {ticker}\n\n"
+        f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"Audit Session ID: `{session_id}`\n"
+        f"Execution Timestamp: `{execution_timestamp}`\n\n"
+    )
+    disclaimer_section = f"\n\n---\n\n## SEBI Regulatory Disclosure & Disclaimer\n\n{SEBI_DISCLAIMER}\n"
+    (save_path / "complete_report.md").write_text(header + "\n\n".join(sections) + disclaimer_section)
     return save_path / "complete_report.md"
 
 
@@ -796,6 +807,26 @@ def display_complete_report(final_state):
         if risk.get("judge_decision"):
             console.print(Panel("[bold]V. Portfolio Manager Decision[/bold]", border_style="green"))
             console.print(Panel(Markdown(risk["judge_decision"]), title="Portfolio Manager", border_style="blue", padding=(1, 2)))
+
+    # SEBI Compliance Audit Trail & Disclaimer
+    from orbisquantagents.compliance import SEBI_DISCLAIMER
+    session_id = final_state.get("session_id", "N/A")
+    execution_timestamp = final_state.get("execution_timestamp", "N/A")
+    
+    console.print()
+    console.print(Rule("SEBI Regulatory Audit Trail", style="bold yellow"))
+    console.print(f"[bold]Audit Session ID:[/bold] {session_id}")
+    console.print(f"[bold]Compliance Timestamp:[/bold] {execution_timestamp}")
+    
+    sources = final_state.get("data_sources", {})
+    if sources:
+        console.print("[bold]Data Source Attributions:[/bold]")
+        for tick, items in sources.items():
+            for item in items:
+                console.print(f" - {tick}: [cyan]{item['method']}[/cyan] via {item['vendor']} ({item['timestamp']})")
+                
+    console.print()
+    console.print(Panel(Markdown(SEBI_DISCLAIMER), title="SEBI Disclosure & Disclaimer", border_style="yellow", padding=(1, 2)))
 
 
 def update_research_team_status(status):

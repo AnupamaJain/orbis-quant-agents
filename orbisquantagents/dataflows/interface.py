@@ -172,7 +172,10 @@ def route_to_vendor(method: str, *args, **kwargs):
         impl_func = vendor_impl[0] if isinstance(vendor_impl, list) else vendor_impl
 
         try:
-            return impl_func(*args, **kwargs)
+            result = impl_func(*args, **kwargs)
+            from orbisquantagents.compliance import record_data_source
+            record_data_source(method, vendor, args, kwargs)
+            return result
         except AlphaVantageRateLimitError:
             continue  # Only rate limits trigger fallback
 

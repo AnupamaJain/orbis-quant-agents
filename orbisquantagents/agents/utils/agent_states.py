@@ -71,3 +71,8 @@ class AgentState(MessagesState):
         RiskDebateState, "Current state of the debate on evaluating risk"
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
+
+    # SEBI Compliance tracking fields
+    session_id: Annotated[str, "Session UUID for audit tracking"]
+    execution_timestamp: Annotated[str, "Execution timestamp in UTC/IST for audit tracking"]
+    data_sources: Annotated[dict, "Tracking data sources and endpoints queried"]

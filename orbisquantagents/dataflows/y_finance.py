@@ -4,14 +4,8 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 import yfinance as yf
 import os
-import requests
 from .stockstats_utils import StockstatsUtils, _clean_dataframe, yf_retry, load_ohlcv, filter_financials_by_date
 
-# Configure global browser-like requests session for yfinance to bypass rate limits
-_YF_SESSION = requests.Session()
-_YF_SESSION.headers.update({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-})
 
 def get_YFin_data_online(
     symbol: Annotated[str, "ticker symbol of the company"],

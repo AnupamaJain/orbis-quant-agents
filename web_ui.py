@@ -939,7 +939,13 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
 def fetch_market_data(ticker, period="1y"):
     """Fetch historical data for the chart using yfinance natively."""
     try:
-        data = yf.download(ticker, period=period, auto_adjust=True)
+        data = yf.download(
+            ticker,
+            period=period,
+            auto_adjust=True,
+            multi_level_index=False,
+            progress=False,
+        )
         if data is None or data.empty:
             return None
         return data
@@ -1118,6 +1124,14 @@ with st.sidebar:
     
     st.divider()
     start_btn = st.button("▷ Start intelligence gathering", use_container_width=True, type="primary")
+    st.divider()
+    from orbisquantagents.compliance import SEBI_DISCLAIMER
+    st.markdown(f"""
+        <div style="background-color: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 10px; border-radius: 6px; font-size: 10.5px; color: #475569; font-family: 'Inter', sans-serif; line-height: 1.45;">
+            <strong style="color: #0F172A;">SEBI Compliance Disclosure</strong><br>
+            {SEBI_DISCLAIMER}
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- MAIN DASHBOARD ---
 
@@ -1379,6 +1393,25 @@ if start_btn:
                          final_container.markdown(f'<div class="report-box bear-box"><h3>🔴 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
                      else:
                          final_container.markdown(f'<div class="report-box hold-box"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
+
+                     # Render compliance metadata
+                     st.markdown("<br>", unsafe_allow_html=True)
+                     st.markdown("### 📋 SEBI Compliance Audit Trail")
+                     
+                     session_val = graph.curr_state.get('session_id', 'N/A') if graph.curr_state else 'N/A'
+                     time_val = graph.curr_state.get('execution_timestamp', 'N/A') if graph.curr_state else 'N/A'
+                     
+                     col_a1, col_a2 = st.columns(2)
+                     col_a1.metric("Execution Session ID", f"{session_val[:8]}...", help=session_val)
+                     col_a2.metric("Compliance Timestamp", time_val)
+                     
+                     sources_dict = graph.curr_state.get('data_sources', {}) if graph.curr_state else {}
+                     if sources_dict:
+                         with st.expander("🔗 Data Source Attribution Details"):
+                             for tick, items in sources_dict.items():
+                                 st.markdown(f"**Ticker: {tick}**")
+                                 for item in items:
+                                     st.markdown(f"- **{item['method']}** via *{item['vendor']}* (Retrieved: {item['timestamp']})")
                          
         st.balloons()
         st.success("Analysis Complete!")

@@ -56,8 +56,11 @@ Be decisive and ground every conclusion in specific evidence from the analysts.{
 
         response = llm.invoke(prompt)
 
+        from orbisquantagents.compliance import SEBI_DISCLAIMER
+        final_decision_with_disclaimer = f"{response.content}\n\n---\n\n{SEBI_DISCLAIMER}"
+
         new_risk_debate_state = {
-            "judge_decision": response.content,
+            "judge_decision": final_decision_with_disclaimer,
             "history": risk_debate_state["history"],
             "aggressive_history": risk_debate_state["aggressive_history"],
             "conservative_history": risk_debate_state["conservative_history"],
@@ -71,7 +74,7 @@ Be decisive and ground every conclusion in specific evidence from the analysts.{
 
         return {
             "risk_debate_state": new_risk_debate_state,
-            "final_trade_decision": response.content,
+            "final_trade_decision": final_decision_with_disclaimer,
         }
 
     return portfolio_manager_node
