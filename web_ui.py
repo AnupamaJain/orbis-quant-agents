@@ -1138,6 +1138,35 @@ with st.sidebar:
 # --- FETCH INITIAL DATA ---
 data = fetch_market_data(ticker)
 
+# --- ANALYST SELECTIONS MAP ---
+analyst_map = {
+    "Market": "market",
+    "Social": "social",
+    "News": "news",
+    "Fundamentals": "fundamentals",
+    "Small Cap & PSU": "small_cap"
+}
+selected_keys = [analyst_map[a] for a in analysts]
+
+analyst_labels = {
+    "market": "Market Analyst",
+    "social": "Social Analyst",
+    "news": "News & Macro Analyst",
+    "fundamentals": "Fundamentals Analyst",
+    "small_cap": "Small Cap & PSU Analyst"
+}
+
+def complete_step(states, label, duration):
+    for idx, (lbl, status, _) in enumerate(states):
+        if lbl == label:
+            states[idx] = (lbl, "done", duration)
+            # Find the next pending step and mark it running
+            for next_idx in range(idx + 1, len(states)):
+                if states[next_idx][1] == "pending":
+                    states[next_idx] = (states[next_idx][0], "running", "")
+                    break
+            break
+
 # --- TABS CREATION ---
 main_tabs = st.tabs(["Market overview", "Agent progress", "Intelligence reports", "Debate arena"])
 
@@ -1190,15 +1219,16 @@ with main_tabs[0]:
 with main_tabs[1]:
     st.markdown('<div class="tab-section-header">📡 Real-time agent pipeline</div>', unsafe_allow_html=True)
     progress_placeholder = st.empty()
-    initial_states = [
-        ("Market Analyst", "pending", ""),
-        ("News & Macro Analyst", "pending", ""),
-        ("Fundamentals Analyst", "pending", ""),
+    initial_states = []
+    for key in selected_keys:
+        if key in analyst_labels:
+            initial_states.append((analyst_labels[key], "pending", ""))
+    initial_states.extend([
         ("Bull & Bear Debate", "pending", ""),
         ("AI Trader", "pending", ""),
         ("Risk Audit", "pending", ""),
         ("Portfolio Manager", "pending", "")
-    ]
+    ])
     progress_placeholder.markdown(render_progress(initial_states), unsafe_allow_html=True)
 
 # Tab 2: Intelligence Reports
@@ -1253,25 +1283,19 @@ with main_tabs[3]:
 
 # --- GRAPH PIPELINE RUN ---
 if start_btn:
-    progress_states = [
-        ("Market Analyst", "running", ""),
-        ("News & Macro Analyst", "pending", ""),
-        ("Fundamentals Analyst", "pending", ""),
+    progress_states = []
+    for key in selected_keys:
+        if key in analyst_labels:
+            progress_states.append((analyst_labels[key], "pending", ""))
+    if progress_states:
+        progress_states[0] = (progress_states[0][0], "running", "")
+    progress_states.extend([
         ("Bull & Bear Debate", "pending", ""),
         ("AI Trader", "pending", ""),
         ("Risk Audit", "pending", ""),
         ("Portfolio Manager", "pending", "")
-    ]
+    ])
     progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-    
-    analyst_map = {
-        "Market": "market",
-        "Social": "social",
-        "News": "news",
-        "Fundamentals": "fundamentals",
-        "Small Cap & PSU": "small_cap"
-    }
-    selected_keys = [analyst_map[a] for a in analysts]
     
     # Dynamic reload of .env to capture any newly added credentials
     load_dotenv(override=True)
@@ -1327,15 +1351,13 @@ if start_btn:
             for chunk in graph.graph.stream(init_state, **args):
                 if "market_report" in chunk and chunk["market_report"]:
                     if "Market" in analyst_containers:
-                        progress_states[0] = ("Market Analyst", "done", "12s")
-                        progress_states[1] = ("News & Macro Analyst", "running", "")
+                        complete_step(progress_states, "Market Analyst", "12s")
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Market"].markdown(f'<div class="report-content">\n\n{chunk["market_report"]}\n\n</div>', unsafe_allow_html=True)
                 
                 if "news_report" in chunk and chunk["news_report"]:
                     if "News" in analyst_containers:
-                        progress_states[1] = ("News & Macro Analyst", "done", "18s")
-                        progress_states[2] = ("Fundamentals Analyst", "running", "")
+                        complete_step(progress_states, "News & Macro Analyst", "18s")
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["News"].markdown(
                             render_news_desk_html(
@@ -1349,23 +1371,30 @@ if start_btn:
                 
                 if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
                     if "Fundamentals" in analyst_containers:
-                        progress_states[2] = ("Fundamentals Analyst", "done", "21s")
-                        progress_states[3] = ("Bull & Bear Debate", "running", "")
+                        complete_step(progress_states, "Fundamentals Analyst", "21s")
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Fundamentals"].markdown(f'<div class="report-content">\n\n{chunk["fundamentals_report"]}\n\n</div>', unsafe_allow_html=True)
                 
                 if "sentiment_report" in chunk and chunk["sentiment_report"]:
                     if "Social" in analyst_containers:
+                        complete_step(progress_states, "Social Analyst", "15s")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Social"].markdown(f'<div class="report-content">\n\n{chunk["sentiment_report"]}\n\n</div>', unsafe_allow_html=True)
     
                 if "small_cap_report" in chunk and chunk["small_cap_report"]:
                     if "Small Cap & PSU" in analyst_containers:
+                        complete_step(progress_states, "Small Cap & PSU Analyst", "20s")
+                        progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Small Cap & PSU"].markdown(f'<div class="report-content">\n\n{chunk["small_cap_report"]}\n\n</div>', unsafe_allow_html=True)
     
                 if "investment_debate_state" in chunk:
                     debate = chunk["investment_debate_state"]
-                    progress_states[3] = ("Bull & Bear Debate", "running", "")
-                    progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+                    # Mark Bull & Bear Debate as running if it's pending
+                    for idx, (lbl, status, _) in enumerate(progress_states):
+                        if lbl == "Bull & Bear Debate" and status == "pending":
+                            progress_states[idx] = (lbl, "running", "")
+                            progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
+                            break
                     
                     if debate.get("bull_history"):
                         bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
@@ -1374,14 +1403,13 @@ if start_btn:
                         bear_container.markdown(f'<div class="report-box bear-box"><b>🐻 Bear Researcher</b><br>{debate["bear_history"]}</div>', unsafe_allow_html=True)
                         bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">₹1,240</div></div>', unsafe_allow_html=True)
                     if debate.get("judge_decision"):
-                        progress_states[3] = ("Bull & Bear Debate", "done", "24s")
-                        progress_states[4] = ("AI Trader", "done", "8s")
-                        progress_states[5] = ("Risk Audit", "done", "14s")
-                        progress_states[6] = ("Portfolio Manager", "running", "")
+                        complete_step(progress_states, "Bull & Bear Debate", "24s")
+                        complete_step(progress_states, "AI Trader", "8s")
+                        complete_step(progress_states, "Risk Audit", "14s")
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
     
                 if "final_trade_decision" in chunk and chunk["final_trade_decision"]:
-                     progress_states[6] = ("Portfolio Manager", "done", "9s")
+                     complete_step(progress_states, "Portfolio Manager", "9s")
                      progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                      
                      final_decision = chunk['final_trade_decision']
