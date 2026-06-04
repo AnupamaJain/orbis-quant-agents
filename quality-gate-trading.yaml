@@ -1,0 +1,28 @@
+version: 1
+name: trading-agents-quality-gate
+
+target:
+  type: local_app
+  behavior_profile: normal
+
+dataset:
+  path: datasets/trading_golden.yaml
+
+judge:
+  provider: mock
+  model: mock-judge
+  temperature: 0
+
+quality_gate:
+  min_pass_rate: 0.95
+  min_average_score: 0.9
+  max_regression_drop: 0.05
+  fail_on_critical: true
+  fail_on_retrieval_miss: false
+
+reports:
+  output_dir: results/runs
+  formats:
+    - json
+    - markdown
+    - html
