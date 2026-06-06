@@ -26,4 +26,4 @@ COPY --from=builder --chown=appuser:appuser /build .
 
 EXPOSE 8001
 
-ENTRYPOINT ["python", "mcp/mcp_server.py", "--transport", "sse"]
+ENTRYPOINT ["python", "mcp/mcp_server.py", "--transport", "streamable-http"]

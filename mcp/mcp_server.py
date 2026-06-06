@@ -233,15 +233,49 @@ class SecureFastMCP(FastMCP):
 
         return app
 
+    def streamable_http_app(self):
+        # Get the standard FastMCP Starlette app
+        app = super().streamable_http_app()
+
+        # Add CORS support so your Vercel frontend can call this EC2 backend
+        from starlette.middleware.cors import CORSMiddleware
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Restrict this to your Vercel domains in production
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+        # Register our secure middleware inside Starlette's middleware stack
+        rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
+        app.add_middleware(
+            SecureASGIMiddleware,
+            calls_per_minute=rate_limit,
+            sse_transport=None,
+        )
+        return app
+
+
 
 # ── Server setup ─────────────────────────────────────────────────────────────
 
 _PORT = int(os.getenv("MCP_PORT", "8001"))
 
+# Determine transport and configure stateless HTTP for scaling
+_transport = "stdio"
+if "--transport" in sys.argv:
+    idx = sys.argv.index("--transport")
+    _transport = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else "stdio"
+
+is_stateless = (_transport == "streamable-http")
+
 mcp = SecureFastMCP(
     name="orbis-quant-agents",
     host="0.0.0.0",
     port=_PORT,
+    stateless_http=is_stateless,
+    json_response=is_stateless,
     instructions=(
         "Multi-agent quantitative analysis for Indian stock markets (NSE/BSE). "
         "Runs Technical, Fundamental, Sentiment and News agents followed by a "
@@ -250,6 +284,7 @@ mcp = SecureFastMCP(
         "targeted queries."
     ),
 )
+
 
 
 # ── Health endpoint (registered via FastMCP custom_route) ─────────────────────
@@ -499,5 +534,8 @@ if __name__ == "__main__":
     if transport == "sse":
         print(f"Starting Orbis Quant Agents MCP server (SSE) on port {_PORT}…")
         mcp.run(transport="sse")
+    elif transport == "streamable-http":
+        print(f"Starting Orbis Quant Agents MCP server (Streamable HTTP) on port {_PORT}…")
+        mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")
