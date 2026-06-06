@@ -70,6 +70,7 @@ class OrbisQuantAgentsGraph:
         self.debug = debug
         self.config = config or DEFAULT_CONFIG
         self.callbacks = callbacks or []
+        print(f"[DEBUG] OrbisQuantAgentsGraph initialized with config: {self.config}", flush=True)
 
         # Update the interface's config
         set_config(self.config)
