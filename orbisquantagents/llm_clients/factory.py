@@ -1,9 +1,12 @@
+import os
 from typing import Optional
 
 from .base_client import BaseLLMClient
 from .openai_client import OpenAIClient
 from .anthropic_client import AnthropicClient
 from .google_client import GoogleClient
+
+_OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434/v1"
 
 
 def create_llm_client(
@@ -34,9 +37,13 @@ def create_llm_client(
     """
     provider_lower = provider.lower()
 
-    # 1. Sanitize base_url: Clear default OpenAI endpoint if using a non-OpenAI-compatible provider
-    if base_url and "api.openai.com" in base_url and provider_lower not in ("openai", "openrouter", "ollama", "xai"):
+    # 1. Sanitize base_url
+    # Clear the OpenAI default for providers that use a completely different endpoint.
+    if base_url and "api.openai.com" in base_url and provider_lower not in ("openai", "openrouter", "xai"):
         base_url = None
+    # Ollama needs its own base URL — default to localhost, allow override via env.
+    if provider_lower == "ollama" and not base_url:
+        base_url = os.getenv("OLLAMA_BASE_URL", _OLLAMA_DEFAULT_BASE_URL)
 
     # 2. Self-healing for mismatched provider-model combinations
     model_lower = model.lower()

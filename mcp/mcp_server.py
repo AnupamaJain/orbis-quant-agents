@@ -332,10 +332,22 @@ def _get_graph(analysts=None, provider_override: str | None = None):
             cfg["llm_provider"]    = provider_override
             cfg["deep_think_llm"]  = os.getenv("FALLBACK_DEEP_THINK_LLM",  cfg["deep_think_llm"])
             cfg["quick_think_llm"] = os.getenv("FALLBACK_QUICK_THINK_LLM", cfg["quick_think_llm"])
+            # Allow a custom base URL for the fallback (required for remote Ollama).
+            # factory.py will default Ollama to OLLAMA_BASE_URL / localhost if this is unset.
+            fallback_base_url = os.getenv("FALLBACK_BASE_URL")
+            if fallback_base_url:
+                cfg["backend_url"] = fallback_base_url
+            elif provider_override != "openai":
+                cfg["backend_url"] = None  # let factory.py apply provider-specific defaults
         else:
             cfg["llm_provider"]    = os.getenv("LLM_PROVIDER",    cfg["llm_provider"])
             cfg["deep_think_llm"]  = os.getenv("DEEP_THINK_LLM",  cfg["deep_think_llm"])
             cfg["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", cfg["quick_think_llm"])
+            primary_base_url = os.getenv("BACKEND_URL")
+            if primary_base_url:
+                cfg["backend_url"] = primary_base_url
+            elif cfg["llm_provider"] != "openai":
+                cfg["backend_url"] = None
 
         _graph_instances[cache_key] = OrbisQuantAgentsGraph(
             selected_analysts=analyst_list,
