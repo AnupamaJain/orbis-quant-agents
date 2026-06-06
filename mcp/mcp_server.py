@@ -29,16 +29,108 @@ import os
 from datetime import date, datetime
 from typing import Optional
 
+import time
+from starlette.datastructures import Headers, QueryParams
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
 
+# ── Security & Authentication ASGI Middleware ─────────────────────────────────
+
+class SecureASGIMiddleware:
+    def __init__(self, app, calls_per_minute: int = 30):
+        self.app = app
+        self.calls_per_minute = calls_per_minute
+        self.requests = {}
+
+    async def __call__(self, scope, receive, send):
+        # We only apply protection to HTTP requests
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = Headers(scope=scope)
+        query_params = QueryParams(scope.get("query_string", b"").decode("utf-8"))
+
+        # 1. API Key verification
+        expected_key = os.getenv("MCP_API_KEY")
+        if expected_key:
+            # Check custom headers and Authorization header
+            api_key = headers.get("x-api-key")
+            if not api_key:
+                auth_header = headers.get("authorization")
+                if auth_header and auth_header.startswith("Bearer "):
+                    api_key = auth_header[7:]
+            # Check query parameters as a fallback
+            if not api_key:
+                api_key = query_params.get("api_key")
+
+            if api_key != expected_key:
+                await self._send_json_response(
+                    send, 
+                    {"status": "error", "message": "Unauthorized: Invalid or missing API key."}, 
+                    status_code=401
+                )
+                return
+
+        # 2. Rate Limiting by Client IP
+        client = scope.get("client")
+        client_ip = client[0] if client else "unknown"
+        now = time.time()
+
+        if client_ip in self.requests:
+            self.requests[client_ip] = [t for t in self.requests[client_ip] if now - t < 60]
+        else:
+            self.requests[client_ip] = []
+
+        if len(self.requests[client_ip]) >= self.calls_per_minute:
+            await self._send_json_response(
+                send, 
+                {"status": "error", "message": "Too Many Requests: Rate limit exceeded."}, 
+                status_code=429
+            )
+            return
+
+        self.requests[client_ip].append(now)
+
+        # Delegate execution downstream
+        await self.app(scope, receive, send)
+
+    async def _send_json_response(self, send, data: dict, status_code: int):
+        body = json.dumps(data).encode("utf-8")
+        await send({
+            "type": "http.response.start",
+            "status": status_code,
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(body)).encode("utf-8")),
+            ]
+        })
+        await send({
+            "type": "http.response.body",
+            "body": body,
+        })
+
+
+class SecureFastMCP(FastMCP):
+    def sse_app(self, mount_path: str | None = None):
+        # Get the standard FastMCP Starlette app
+        app = super().sse_app(mount_path)
+        
+        # Wrap the Starlette application with our Secure ASGI middleware
+        rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
+        
+        # We can add ASGI middleware directly to Starlette by wrapping it
+        wrapped_app = SecureASGIMiddleware(app, calls_per_minute=rate_limit)
+        return wrapped_app
+
+
 # ── Server setup ─────────────────────────────────────────────────────────────
 
 _PORT = int(os.getenv("MCP_PORT", "8001"))
 
-mcp = FastMCP(
+mcp = SecureFastMCP(
     name="orbis-quant-agents",
     host="0.0.0.0",
     port=_PORT,
@@ -50,6 +142,7 @@ mcp = FastMCP(
         "targeted queries."
     ),
 )
+
 
 # Lazy-init the graph so import doesn't block server startup
 _graph_instance = None
