@@ -118,8 +118,24 @@ class SecureASGIMiddleware:
 
         # 3. Session-readiness gating for POST /messages/ requests
         # Instead of a blind 200ms sleep, poll until the SSE session is actually
-        # registered in the transport's session map.  This eliminates the
+        # registered in the transport's session map. This eliminates the
         # "Received request before initialization was complete" race condition.
+        #
+        # ⚠️ FRAGILITY WARNING (SDK Private Attribute):
+        # We access `self._sse_transport._read_stream_writers` which is a private,
+        # undocumented field inside MCP Python SDK's SseServerTransport class.
+        # Upgrading the `mcp` library package might break this if internal state
+        # representation changes.
+        #
+        # ⚠️ SCALING & ARCHITECTURE WARNING (Single-Process / Sticky Sessions):
+        # This memory check is process-local. If this service is scaled to multiple
+        # replica containers or run with multiple Uvicorn worker processes behind a load
+        # balancer (without session pinning), incoming POST requests might route to a
+        # different process than the one holding the SSE stream connection.
+        # If deploying to a multi-instance/multi-worker environment, you MUST either:
+        #   - Enable sticky sessions (session pinning) on your load balancer/ingress,
+        #   - Force single-worker mode (default in FastMCP), or
+        #   - Migrate to a stateless transport (like Streamable HTTP).
         if scope.get("method") == "POST" and request_path.startswith("/messages"):
             session_id_hex = query_params.get("session_id")
             if session_id_hex and self._sse_transport is not None:
@@ -129,7 +145,7 @@ class SecureASGIMiddleware:
                     sid = None
 
                 if sid is not None:
-                    # Poll up to 5 s (10 × 500 ms) for the session to appear
+                    # Poll up to 5 s (10 × 500 ms) for the session to appear in the local registry
                     for attempt in range(10):
                         if sid in self._sse_transport._read_stream_writers:
                             logger.debug(
