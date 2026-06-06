@@ -53,9 +53,10 @@ class SecureASGIMiddleware:
         headers = Headers(scope=scope)
         query_params = QueryParams(scope.get("query_string", b"").decode("utf-8"))
 
-        # 1. API Key verification
+        # 1. API Key verification (Bypass /messages paths since they rely on the session_id handshake)
         expected_key = os.getenv("MCP_API_KEY")
-        if expected_key:
+        request_path = scope.get("path", "")
+        if expected_key and not request_path.startswith("/messages"):
             # Check custom headers and Authorization header
             api_key = headers.get("x-api-key")
             if not api_key:
