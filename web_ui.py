@@ -1168,7 +1168,7 @@ def complete_step(states, label, duration):
             break
 
 # --- TABS CREATION ---
-main_tabs = st.tabs(["Market overview", "Agent progress", "Intelligence reports", "Debate arena", "Quality & Security Audits"])
+main_tabs = st.tabs(["Market overview", "Agent progress", "Intelligence reports", "Debate arena"])
 
 # Tab 0: Market Overview
 with main_tabs[0]:
@@ -1281,113 +1281,6 @@ with main_tabs[3]:
     final_container = st.empty()
     final_container.info("Waiting for final PM decision...")
 
-# Tab 4: Quality & Security Audits
-with main_tabs[4]:
-    st.markdown('<div class="tab-section-header">🌌 Quality & Security Audit Dashboard</div>', unsafe_allow_html=True)
-    
-    # Audit action buttons
-    col_btn1, col_btn2 = st.columns([2, 5])
-    with col_btn1:
-        run_audit = st.button("▷ Run QA & Security Audit", help="Executes the 100 automated test cases (SAST scan, secret audit, log checksums, disclaimers, etc.)")
-    with col_btn2:
-        st.markdown("<div style='margin-top: 10px; font-size: 11px; color: #6b7280;'>Last run will verify compliance constraints and update the local cryptographically chained audit log.</div>", unsafe_allow_html=True)
-
-    if run_audit:
-        with st.spinner("Running 100 quality and security checks..."):
-            import subprocess
-            res = subprocess.run([".venv/bin/python", "scratch/run_trading_evals.py"], capture_output=True, text=True)
-            if res.returncode == 0:
-                st.success("Audit completed successfully! Reloading results...")
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error(f"Audit run failed with code {res.returncode}:\n{res.stderr}")
-
-    report_file = Path("results/trading_evals_report.json")
-    if report_file.exists():
-        try:
-            with open(report_file, "r") as f:
-                report_data = json.load(f)
-            
-            summary = report_data.get("summary", {})
-            cases_list = report_data.get("results", [])
-            
-            # Stat metrics cards
-            col_st1, col_st2, col_st3, col_st4 = st.columns(4)
-            col_st1.metric("Total Test Cases", summary.get("total_test_cases", 0))
-            col_st2.metric("Passed Cases", summary.get("passed_cases", 0), delta="100.0%" if summary.get("failed_cases", 0) == 0 else None, delta_color="normal")
-            col_st3.metric("Failed Cases", summary.get("failed_cases", 0), delta="0" if summary.get("failed_cases", 0) == 0 else None, delta_color="inverse")
-            col_st4.metric("Pass Rate", f"{summary.get('pass_rate_percentage', 0.0)}%")
-            
-            # Audit status
-            status_color = "#10b981" if summary.get("failed_cases", 0) == 0 else "#ef4444"
-            status_text = "PASSED" if summary.get("failed_cases", 0) == 0 else "FAILED"
-            st.markdown(f"""
-                <div style='background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 24px;'>
-                    <div style='display: flex; justify-content: space-between; align-items: center;'>
-                        <div style='font-size: 13px; font-weight: 600; color: #0f172a;'>Quality Gate Status: <span style='color: {status_color}; font-weight: 700;'>{status_text}</span></div>
-                        <div style='font-size: 11px; color: #6b7280;'>Audit Session: {summary.get('execution_timestamp', 'N/A')}</div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Interactive filter options
-            col_f1, col_f2 = st.columns([3, 4])
-            with col_f1:
-                group_filter = st.selectbox("Filter by Category", ["All", "Analyst Ingestion", "Research Debate", "Execution & PM Desk", "Compliance & Audit", "Security & UI"])
-            with col_f2:
-                search_query = st.text_input("Search test case name or ID", value="", help="e.g. TC-01, WORM, SEBI")
-                
-            # Apply filters
-            filtered_cases = []
-            for tc in cases_list:
-                if group_filter != "All" and tc.get("group") != group_filter:
-                    continue
-                if search_query:
-                    q = search_query.lower()
-                    if q not in tc.get("name", "").lower() and q not in tc.get("id", "").lower() and q not in tc.get("description", "").lower():
-                        continue
-                filtered_cases.append(tc)
-                
-            # Convert to Pandas DataFrame for rendering in table
-            df_cases = pd.DataFrame([
-                {
-                    "ID": tc.get("id"),
-                    "Test Case Name": tc.get("name"),
-                    "Group Category": tc.get("group"),
-                    "Status": tc.get("status"),
-                    "Description": tc.get("description")
-                }
-                for tc in filtered_cases
-            ])
-            
-            st.markdown(f"**Showing {len(filtered_cases)} of {len(cases_list)} test cases:**")
-            st.dataframe(df_cases, use_container_width=True, hide_index=True)
-            
-            # Select test case to view full evidence details
-            st.markdown("### 🔍 Test Case Audit Evidence Finder")
-            selected_tc_id = st.selectbox("Select Test Case ID to view full evidence log", [tc.get("id") for tc in filtered_cases])
-            selected_tc = next((tc for tc in filtered_cases if tc.get("id") == selected_tc_id), None)
-            if selected_tc:
-                st.markdown(f"**Test Name:** {selected_tc.get('name')}")
-                st.markdown(f"**Description:** {selected_tc.get('description')}")
-                status_badge = "🟢 PASSED" if selected_tc.get('status') == 'PASSED' else "🔴 FAILED"
-                st.markdown(f"**Status:** {status_badge}")
-                if selected_tc.get("evidence"):
-                    st.code(selected_tc.get("evidence"), language="text")
-                else:
-                    st.info("No text evidence log captured for this test case.")
-                    
-            # Link to the full reports
-            st.markdown("### 📂 Complete Audit Artifact Links")
-            col_l1, col_l2 = st.columns(2)
-            col_l1.markdown("[View Full HTML Audit Report](file:///Users/admin/.gemini/antigravity-ide/brain/c4601f73-3f1d-4d88-a9d4-f580f8dc69e8/trading_evals_report.html)")
-            col_l2.markdown("[View Raw JSON Audit Logs](file:///Users/admin/.gemini/antigravity-ide/brain/c4601f73-3f1d-4d88-a9d4-f580f8dc69e8/trading_evals_report.json)")
-
-        except Exception as ex:
-            st.error(f"Error parsing the audit report file: {ex}")
-    else:
-        st.warning("No audit reports found. Please click 'Run QA & Security Audit' to generate the reports and compile evidence.")
 
 # --- GRAPH PIPELINE RUN ---
 if start_btn:
