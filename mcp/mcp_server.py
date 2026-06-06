@@ -25,24 +25,34 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import asyncio
 import json
+import logging
 import os
 from datetime import date, datetime
 from typing import Optional
+from uuid import UUID
 
 import time
 from starlette.datastructures import Headers, QueryParams
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+
+logger = logging.getLogger("orbis-quant-mcp")
 
 load_dotenv()
 
 # ── Security & Authentication ASGI Middleware ─────────────────────────────────
 
 class SecureASGIMiddleware:
-    def __init__(self, app, calls_per_minute: int = 30):
+    """ASGI middleware providing API key auth, rate limiting, and SSE session-readiness gating."""
+
+    def __init__(self, app, calls_per_minute: int = 30, sse_transport=None):
         self.app = app
         self.calls_per_minute = calls_per_minute
         self.requests = {}
+        # Reference to SseServerTransport so we can check session readiness
+        self._sse_transport = sse_transport
 
     async def __call__(self, scope, receive, send):
         # We only apply protection to HTTP requests
@@ -52,10 +62,21 @@ class SecureASGIMiddleware:
 
         headers = Headers(scope=scope)
         query_params = QueryParams(scope.get("query_string", b"").decode("utf-8"))
+        request_path = scope.get("path", "")
+
+        # Health check — respond immediately, bypass all auth/rate-limiting
+        if request_path == "/health" and scope.get("method") in ("GET", "HEAD"):
+            provider = os.getenv("LLM_PROVIDER", "openai")
+            await self._send_json_response(send, {
+                "status":   "ok",
+                "server":   "orbis-quant-agents",
+                "provider": provider,
+                "port":     int(os.getenv("MCP_PORT", "8001")),
+            }, status_code=200)
+            return
 
         # 1. API Key verification (Bypass /messages paths since they rely on the session_id handshake)
         expected_key = os.getenv("MCP_API_KEY")
-        request_path = scope.get("path", "")
         if expected_key and not request_path.startswith("/messages"):
             # Check custom headers and Authorization header
             api_key = headers.get("x-api-key")
@@ -95,11 +116,40 @@ class SecureASGIMiddleware:
 
         self.requests[client_ip].append(now)
 
-        # 3. Handle Concurrency Race Condition
-        # Delay incoming POST messages by 200ms to allow the GET /sse connection 
-        # background thread to finish setting up the session session-manager.
+        # 3. Session-readiness gating for POST /messages/ requests
+        # Instead of a blind 200ms sleep, poll until the SSE session is actually
+        # registered in the transport's session map.  This eliminates the
+        # "Received request before initialization was complete" race condition.
         if scope.get("method") == "POST" and request_path.startswith("/messages"):
-            await asyncio.sleep(0.2)
+            session_id_hex = query_params.get("session_id")
+            if session_id_hex and self._sse_transport is not None:
+                try:
+                    sid = UUID(hex=session_id_hex)
+                except ValueError:
+                    sid = None
+
+                if sid is not None:
+                    # Poll up to 5 s (10 × 500 ms) for the session to appear
+                    for attempt in range(10):
+                        if sid in self._sse_transport._read_stream_writers:
+                            logger.debug(
+                                "Session %s ready after %d ms",
+                                session_id_hex, attempt * 500,
+                            )
+                            break
+                        logger.debug(
+                            "Session %s not ready, waiting (attempt %d/10)…",
+                            session_id_hex, attempt + 1,
+                        )
+                        await asyncio.sleep(0.5)
+                    else:
+                        logger.warning(
+                            "Session %s still not registered after 5 s — forwarding anyway",
+                            session_id_hex,
+                        )
+            else:
+                # Fallback if we don't have the transport ref or no session_id
+                await asyncio.sleep(0.3)
 
         # Delegate execution downstream
         await self.app(scope, receive, send)
@@ -120,11 +170,12 @@ class SecureASGIMiddleware:
         })
 
 
+
 class SecureFastMCP(FastMCP):
     def sse_app(self, mount_path: str | None = None):
         # Get the standard FastMCP Starlette app
         app = super().sse_app(mount_path)
-        
+
         # Add CORS support so your Vercel frontend can call this EC2 backend
         from starlette.middleware.cors import CORSMiddleware
         app.add_middleware(
@@ -134,12 +185,36 @@ class SecureFastMCP(FastMCP):
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
+        # Grab the SseServerTransport instance so the middleware can poll for
+        # session readiness instead of using a blind sleep.
+        sse_transport = None
+        for route in app.routes:
+            # The Mount at /messages/ wraps sse.handle_post_message;
+            # its .app holds the transport's bound method, giving us the instance.
+            if hasattr(route, "path") and "/messages" in getattr(route, "path", ""):
+                handler = getattr(route, "app", None)
+                if handler is not None and hasattr(handler, "__self__"):
+                    sse_transport = handler.__self__
+                    break
+
         # Register our secure middleware inside Starlette's middleware stack
         # This keeps the app type as Starlette so Uvicorn can run the lifespan/startup events correctly
         rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
-        app.add_middleware(SecureASGIMiddleware, calls_per_minute=rate_limit)
-        
+        app.add_middleware(
+            SecureASGIMiddleware,
+            calls_per_minute=rate_limit,
+            sse_transport=sse_transport,
+        )
+
+        if sse_transport:
+            logger.info("SSE transport reference acquired — session-readiness polling enabled")
+        else:
+            logger.warning(
+                "Could not acquire SSE transport reference — falling back to fixed delay. "
+                "This may happen if the Starlette route layout changed."
+            )
+
         return app
 
 
@@ -159,6 +234,20 @@ mcp = SecureFastMCP(
         "targeted queries."
     ),
 )
+
+
+# ── Health endpoint (registered via FastMCP custom_route) ─────────────────────
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    """Liveness / readiness probe for load-balancers and monitoring."""
+    provider = os.getenv("LLM_PROVIDER", "openai")
+    return JSONResponse({
+        "status":   "ok",
+        "server":   "orbis-quant-agents",
+        "provider": provider,
+        "port":     _PORT,
+    })
 
 
 # Lazy-init the graph so import doesn't block server startup
@@ -189,8 +278,21 @@ def _get_graph(analysts=None):
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
+def _run_pipeline(symbol: str, trade_date: str, analyst_list: list[str]) -> dict:
+    """Synchronous helper — runs the blocking graph pipeline."""
+    graph = _get_graph(analyst_list)
+    final_state, decision = graph.propagate(symbol, trade_date)
+    return {
+        "symbol":     symbol,
+        "trade_date": trade_date,
+        "analysts":   analyst_list,
+        "decision":   decision,
+        "status":     "success",
+    }
+
+
 @mcp.tool()
-def analyze_stock(
+async def analyze_stock(
     symbol: str,
     trade_date: Optional[str] = None,
     analysts: Optional[str] = "market,social,news,fundamentals",
@@ -226,27 +328,30 @@ def analyze_stock(
     analyst_list = [a.strip() for a in analysts.split(",")]
 
     try:
-        graph = _get_graph(analyst_list)
-        final_state, decision = graph.propagate(symbol, trade_date)
-
-        return json.dumps({
-            "symbol":     symbol,
-            "trade_date": trade_date,
-            "analysts":   analyst_list,
-            "decision":   decision,
-            "status":     "success",
-        }, indent=2, default=str)
+        # Run the blocking graph pipeline in a thread so the async event loop
+        # stays free for SSE heartbeats and other concurrent requests.
+        result = await asyncio.to_thread(_run_pipeline, symbol, trade_date, analyst_list)
+        return json.dumps(result, indent=2, default=str)
 
     except Exception as e:
+        provider = os.getenv("LLM_PROVIDER", "openai")
+        model    = os.getenv("DEEP_THINK_LLM", "unknown")
+        logger.exception("analyze_stock failed for %s", symbol)
         return json.dumps({
-            "symbol":  symbol,
-            "status":  "error",
-            "message": str(e),
+            "symbol":   symbol,
+            "status":   "error",
+            "message":  str(e),
+            "provider": provider,
+            "model":    model,
+            "hint":     (
+                f"Check that the {provider.upper()} API key is set and valid. "
+                f"Current provider={provider}, model={model}."
+            ),
         })
 
 
 @mcp.tool()
-def get_technical_analysis(symbol: str) -> str:
+async def get_technical_analysis(symbol: str) -> str:
     """
     Run only the technical analyst agent — fast, no fundamental or news data needed.
 
@@ -256,11 +361,11 @@ def get_technical_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker (e.g. "RELIANCE", "TCS"). .NS suffix added automatically.
     """
-    return analyze_stock(symbol=symbol, analysts="market")
+    return await analyze_stock(symbol=symbol, analysts="market")
 
 
 @mcp.tool()
-def get_fundamental_analysis(symbol: str) -> str:
+async def get_fundamental_analysis(symbol: str) -> str:
     """
     Run only the fundamental analyst agent.
 
@@ -270,11 +375,11 @@ def get_fundamental_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker (e.g. "HDFCBANK", "WIPRO"). .NS suffix added automatically.
     """
-    return analyze_stock(symbol=symbol, analysts="fundamentals")
+    return await analyze_stock(symbol=symbol, analysts="fundamentals")
 
 
 @mcp.tool()
-def get_sentiment_analysis(symbol: str) -> str:
+async def get_sentiment_analysis(symbol: str) -> str:
     """
     Run sentiment + news agents — no technical or fundamental data.
 
@@ -284,11 +389,11 @@ def get_sentiment_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker.
     """
-    return analyze_stock(symbol=symbol, analysts="social,news")
+    return await analyze_stock(symbol=symbol, analysts="social,news")
 
 
 @mcp.tool()
-def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
+async def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
     """
     Run the full bull vs bear research debate for a stock.
 
@@ -303,12 +408,12 @@ def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
         symbol:     NSE ticker.
         trade_date: YYYY-MM-DD. Defaults to today.
     """
-    return analyze_stock(symbol=symbol, trade_date=trade_date,
-                         analysts="market,fundamentals,social,news")
+    return await analyze_stock(symbol=symbol, trade_date=trade_date,
+                               analysts="market,fundamentals,social,news")
 
 
 @mcp.tool()
-def screen_watchlist(symbols: str, trade_date: Optional[str] = None) -> str:
+async def screen_watchlist(symbols: str, trade_date: Optional[str] = None) -> str:
     """
     Run quick technical analysis on a list of stocks and rank by signal strength.
 
@@ -327,7 +432,7 @@ def screen_watchlist(symbols: str, trade_date: Optional[str] = None) -> str:
 
     for sym in ticker_list:
         try:
-            raw = analyze_stock(symbol=sym, trade_date=trade_date, analysts="market")
+            raw = await analyze_stock(symbol=sym, trade_date=trade_date, analysts="market")
             data = json.loads(raw)
             results.append({
                 "symbol":   sym,
