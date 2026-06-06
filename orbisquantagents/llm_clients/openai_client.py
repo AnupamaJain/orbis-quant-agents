@@ -74,6 +74,10 @@ class OpenAIClient(BaseLLMClient):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
+        # Set default timeout and max_retries if not explicitly provided
+        llm_kwargs.setdefault("timeout", 45.0)
+        llm_kwargs.setdefault("max_retries", 2)
+
         # Native OpenAI: use Responses API for consistent behavior across
         # all model families. Third-party providers use Chat Completions.
         if self.provider == "openai":

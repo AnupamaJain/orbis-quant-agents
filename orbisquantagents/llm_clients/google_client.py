@@ -35,6 +35,10 @@ class GoogleClient(BaseLLMClient):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
+        # Set default timeout and max_retries if not explicitly provided
+        llm_kwargs.setdefault("timeout", 45.0)
+        llm_kwargs.setdefault("max_retries", 2)
+
         # Unified api_key maps to provider-specific google_api_key
         google_api_key = self.kwargs.get("api_key") or self.kwargs.get("google_api_key")
         if google_api_key:
