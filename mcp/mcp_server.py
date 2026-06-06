@@ -310,36 +310,94 @@ async def health_check(request: Request) -> JSONResponse:
 
 
 # Lazy-init the graph so import doesn't block server startup
+# Keyed by (analyst_tuple, provider) so primary and fallback graphs are cached separately.
 _graph_instances = {}
 
-def _get_graph(analysts=None):
+def _get_graph(analysts=None, provider_override: str | None = None):
     global _graph_instances
     analyst_list = analysts or ["market", "social", "news", "fundamentals"]
     analyst_tuple = tuple(sorted(analyst_list))
-    
-    if analyst_tuple not in _graph_instances:
+
+    provider = provider_override or os.getenv("LLM_PROVIDER", "openai")
+    cache_key = (analyst_tuple, provider)
+
+    if cache_key not in _graph_instances:
         from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
         from orbisquantagents.default_config import DEFAULT_CONFIG
 
         cfg = DEFAULT_CONFIG.copy()
-        cfg["deep_think_llm"]  = os.getenv("DEEP_THINK_LLM",  cfg["deep_think_llm"])
-        cfg["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", cfg["quick_think_llm"])
-        cfg["llm_provider"]    = os.getenv("LLM_PROVIDER",    cfg["llm_provider"])
         cfg["max_debate_rounds"] = 1
 
-        _graph_instances[analyst_tuple] = OrbisQuantAgentsGraph(
+        if provider_override:
+            cfg["llm_provider"]    = provider_override
+            cfg["deep_think_llm"]  = os.getenv("FALLBACK_DEEP_THINK_LLM",  cfg["deep_think_llm"])
+            cfg["quick_think_llm"] = os.getenv("FALLBACK_QUICK_THINK_LLM", cfg["quick_think_llm"])
+        else:
+            cfg["llm_provider"]    = os.getenv("LLM_PROVIDER",    cfg["llm_provider"])
+            cfg["deep_think_llm"]  = os.getenv("DEEP_THINK_LLM",  cfg["deep_think_llm"])
+            cfg["quick_think_llm"] = os.getenv("QUICK_THINK_LLM", cfg["quick_think_llm"])
+
+        _graph_instances[cache_key] = OrbisQuantAgentsGraph(
             selected_analysts=analyst_list,
             debug=False,
             config=cfg,
         )
-    return _graph_instances[analyst_tuple]
+    return _graph_instances[cache_key]
+
+
+def _is_provider_limit_error(exc: Exception) -> bool:
+    """Return True if the error is a transient rate-limit or overload from the LLM provider."""
+    s = str(exc).lower()
+    return any(x in s for x in (
+        "503", "429", "resource_exhausted", "overloaded",
+        "rate limit", "quota", "too many requests",
+    ))
+
+
+# ── Report profiles ───────────────────────────────────────────────────────────
+# Maps a user-facing intent label to the analyst subset and debate depth.
+# Kept in sync with web_ui.py's _REPORT_PROFILES.
+
+_REPORT_PROFILES: dict[str, dict] = {
+    "pre_market": {
+        "analysts": ["market"],
+        "max_debate_rounds": 1,
+        "label": "Pre-market setup",
+        "desc": "Price levels, RSI, MACD — fast check before the open",
+    },
+    "swing_trade": {
+        "analysts": ["market", "news"],
+        "max_debate_rounds": 1,
+        "label": "Swing trade entry",
+        "desc": "Technical setup + news catalyst for 1–5 day trades",
+    },
+    "long_term": {
+        "analysts": ["fundamentals", "news"],
+        "max_debate_rounds": 3,
+        "label": "Long-term investing",
+        "desc": "PE, revenue, promoter holding, debt — worth holding?",
+    },
+    "sentiment": {
+        "analysts": ["social", "news"],
+        "max_debate_rounds": 1,
+        "label": "Sentiment & news",
+        "desc": "Social tone, headlines, SEBI filings, FII/DII flows",
+    },
+    "full": {
+        "analysts": ["market", "social", "news", "fundamentals"],
+        "max_debate_rounds": 3,
+        "label": "Full intelligence",
+        "desc": "All analysts + bull vs bear debate + PM verdict",
+    },
+}
 
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
-def _run_pipeline(symbol: str, trade_date: str, analyst_list: list[str]) -> dict:
+def _run_pipeline(symbol: str, trade_date: str, analyst_list: list[str],
+                  provider_override: str | None = None) -> dict:
     """Synchronous helper — runs the blocking graph pipeline."""
-    graph = _get_graph(analyst_list)
+    graph = _get_graph(analyst_list, provider_override=provider_override)
     final_state, decision = graph.propagate(symbol, trade_date)
     return {
         "symbol":     symbol,
@@ -386,25 +444,55 @@ async def analyze_stock(
 
     analyst_list = [a.strip() for a in analysts.split(",")]
 
+    primary_provider = os.getenv("LLM_PROVIDER", "openai")
+    fallback_provider = os.getenv("FALLBACK_LLM_PROVIDER")
+
     try:
         # Run the blocking graph pipeline in a thread so the async event loop
         # stays free for SSE heartbeats and other concurrent requests.
         result = await asyncio.to_thread(_run_pipeline, symbol, trade_date, analyst_list)
         return json.dumps(result, indent=2, default=str)
 
-    except Exception as e:
-        provider = os.getenv("LLM_PROVIDER", "openai")
-        model    = os.getenv("DEEP_THINK_LLM", "unknown")
+    except Exception as primary_exc:
+        if fallback_provider and fallback_provider != primary_provider and _is_provider_limit_error(primary_exc):
+            logger.warning(
+                "Primary provider %s failed for %s (%s) — retrying with fallback %s",
+                primary_provider, symbol, type(primary_exc).__name__, fallback_provider,
+            )
+            try:
+                result = await asyncio.to_thread(
+                    _run_pipeline, symbol, trade_date, analyst_list, fallback_provider
+                )
+                result["provider_used"] = fallback_provider
+                result["primary_error"] = str(primary_exc)[:200]
+                return json.dumps(result, indent=2, default=str)
+            except Exception as fallback_exc:
+                logger.exception("Fallback provider %s also failed for %s", fallback_provider, symbol)
+                return json.dumps({
+                    "symbol":          symbol,
+                    "status":          "error",
+                    "message":         str(fallback_exc),
+                    "primary_error":   str(primary_exc)[:200],
+                    "provider":        fallback_provider,
+                    "primary_provider": primary_provider,
+                    "hint": (
+                        f"Both {primary_provider.upper()} and fallback {fallback_provider.upper()} failed. "
+                        "Check API keys and quota."
+                    ),
+                })
+
         logger.exception("analyze_stock failed for %s", symbol)
+        model = os.getenv("DEEP_THINK_LLM", "unknown")
         return json.dumps({
             "symbol":   symbol,
             "status":   "error",
-            "message":  str(e),
-            "provider": provider,
+            "message":  str(primary_exc),
+            "provider": primary_provider,
             "model":    model,
             "hint":     (
-                f"Check that the {provider.upper()} API key is set and valid. "
-                f"Current provider={provider}, model={model}."
+                f"Check that the {primary_provider.upper()} API key is set and valid. "
+                f"Current provider={primary_provider}, model={model}. "
+                + (f"Set FALLBACK_LLM_PROVIDER env var to enable automatic failover." if not fallback_provider else "")
             ),
         })
 
@@ -505,6 +593,65 @@ async def screen_watchlist(symbols: str, trade_date: Optional[str] = None) -> st
     # Rank by confidence descending
     results.sort(key=lambda x: x.get("confidence", 0), reverse=True)
     return json.dumps(results, indent=2)
+
+
+@mcp.tool()
+async def request_analysis(
+    symbol: str,
+    report_type: str,
+    trade_date: Optional[str] = None,
+) -> str:
+    """
+    Run analysis on a stock using a named report profile.
+
+    Use this instead of analyze_stock when the user specifies what they're
+    looking for — it picks the right analyst team and debate depth automatically.
+
+    report_type options (choose the closest match to the user's intent):
+      "pre_market"  — price levels, RSI, MACD. Fast check before the open.
+      "swing_trade" — technical setup + news catalyst for 1–5 day trades.
+      "long_term"   — PE, revenue, promoter holding — worth holding long?
+      "sentiment"   — social tone, headlines, SEBI filings, FII/DII flows.
+      "full"        — all analysts + bull vs bear debate + PM verdict (default).
+
+    Args:
+        symbol:      NSE/BSE ticker (e.g. "RELIANCE.NS", "INFY.NS").
+        report_type: One of the profile keys listed above.
+        trade_date:  Analysis date as YYYY-MM-DD. Defaults to today.
+
+    Returns:
+        JSON string with analysis and the profile label that was used.
+    """
+    profile = _REPORT_PROFILES.get(report_type.lower())
+    if profile is None:
+        available = ", ".join(f'"{k}"' for k in _REPORT_PROFILES)
+        return json.dumps({
+            "status": "error",
+            "message": f"Unknown report_type '{report_type}'. Available: {available}",
+        })
+
+    analysts_str = ",".join(profile["analysts"])
+    result_raw = await analyze_stock(symbol=symbol, trade_date=trade_date, analysts=analysts_str)
+
+    try:
+        result = json.loads(result_raw)
+    except Exception:
+        return result_raw
+
+    result["report_type"] = report_type
+    result["report_label"] = profile["label"]
+    result["report_desc"] = profile["desc"]
+    return json.dumps(result, indent=2, default=str)
+
+
+@mcp.resource("reports://profiles")
+def list_report_profiles() -> str:
+    """Lists all named report profiles and what each one analyses."""
+    return json.dumps(
+        {k: {"label": v["label"], "analysts": v["analysts"], "desc": v["desc"]}
+         for k, v in _REPORT_PROFILES.items()},
+        indent=2,
+    )
 
 
 # ── Resources ─────────────────────────────────────────────────────────────────

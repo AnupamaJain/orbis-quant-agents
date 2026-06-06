@@ -1107,19 +1107,66 @@ with st.sidebar:
     
     st.markdown("### 🧠 BRAIN SETTINGS")
     provider = st.selectbox("LLM provider", ["OpenAI", "Google", "Anthropic", "xAI", "Ollama"])
-    
-    analysts = st.multiselect(
-        "Analyst team",
-        ["Market", "Social", "News", "Fundamentals", "Small Cap & PSU"],
-        default=["Market", "News", "Fundamentals"]
+
+    st.markdown("### 🎯 WHAT ARE YOU LOOKING FOR?")
+
+    _REPORT_PROFILES = {
+        "⚡ Pre-market setup":    {
+            "analysts": ["Market"],
+            "depth": "Shallow",
+            "desc": "Price levels, RSI, MACD — fast check before the open",
+        },
+        "📈 Swing trade entry":   {
+            "analysts": ["Market", "News"],
+            "depth": "Medium",
+            "desc": "Technical setup + news catalyst for 1–5 day trades",
+        },
+        "🏦 Long-term investing": {
+            "analysts": ["Fundamentals", "News"],
+            "depth": "Deep",
+            "desc": "PE, revenue, promoter holding, debt — worth holding?",
+        },
+        "📰 Sentiment & news":    {
+            "analysts": ["Social", "News"],
+            "depth": "Shallow",
+            "desc": "Social tone, headlines, SEBI filings, FII/DII flows",
+        },
+        "🧠 Full intelligence":   {
+            "analysts": ["Market", "Social", "News", "Fundamentals"],
+            "depth": "Deep",
+            "desc": "All analysts + bull vs bear debate + PM verdict",
+        },
+        "⚙ Custom":              {
+            "analysts": ["Market", "News", "Fundamentals"],
+            "depth": "Medium",
+            "desc": "Pick your own analyst team and depth",
+        },
+    }
+
+    focus = st.radio(
+        "Analysis goal",
+        options=list(_REPORT_PROFILES.keys()),
+        index=4,
+        label_visibility="collapsed",
     )
-    
-    depth = st.select_slider(
-        "Research depth",
-        options=["Shallow", "Medium", "Deep"],
-        value="Medium"
-    )
-    
+    profile = _REPORT_PROFILES[focus]
+    st.caption(f"*{profile['desc']}*")
+
+    if focus == "⚙ Custom":
+        analysts = st.multiselect(
+            "Analyst team",
+            ["Market", "Social", "News", "Fundamentals", "Small Cap & PSU"],
+            default=profile["analysts"],
+        )
+        depth = st.select_slider(
+            "Research depth",
+            options=["Shallow", "Medium", "Deep"],
+            value=profile["depth"],
+        )
+    else:
+        analysts = profile["analysts"]
+        depth = profile["depth"]
+
     depth_map = {"Shallow": 1, "Medium": 3, "Deep": 5}
     
     st.divider()
