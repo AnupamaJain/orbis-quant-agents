@@ -95,6 +95,12 @@ class SecureASGIMiddleware:
 
         self.requests[client_ip].append(now)
 
+        # 3. Handle Concurrency Race Condition
+        # Delay incoming POST messages by 200ms to allow the GET /sse connection 
+        # background thread to finish setting up the session session-manager.
+        if scope.get("method") == "POST" and request_path.startswith("/messages"):
+            await asyncio.sleep(0.2)
+
         # Delegate execution downstream
         await self.app(scope, receive, send)
 
