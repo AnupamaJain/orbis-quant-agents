@@ -97,6 +97,13 @@ class SecureASGIMiddleware:
                 return
 
         # 2. Rate Limiting by Client IP
+        # ⚠️ HORIZONTAL SCALING WARNING:
+        # This rate limiter uses a process-local in-memory dict (`self.requests`).
+        # If the server is deployed with multiple replicas (horizontal pod scaling) or
+        # multiple Uvicorn workers, each worker enforces limits independently.
+        # This means the effective global limit will scale up to (N * calls_per_minute)
+        # and request blocking will be distributed. For a strict centralized rate limit,
+        # this should be backed by a shared datastore like Redis.
         client = scope.get("client")
         client_ip = client[0] if client else "unknown"
         now = time.time()
@@ -116,7 +123,7 @@ class SecureASGIMiddleware:
 
         self.requests[client_ip].append(now)
 
-        # 3. Session-readiness gating for POST /messages/ requests
+        # 3. Session-readiness gating for POST /messages/ requests (SSE only)
         # Instead of a blind 200ms sleep, poll until the SSE session is actually
         # registered in the transport's session map. This eliminates the
         # "Received request before initialization was complete" race condition.
@@ -136,9 +143,9 @@ class SecureASGIMiddleware:
         #   - Enable sticky sessions (session pinning) on your load balancer/ingress,
         #   - Force single-worker mode (default in FastMCP), or
         #   - Migrate to a stateless transport (like Streamable HTTP).
-        if scope.get("method") == "POST" and request_path.startswith("/messages"):
+        if self._sse_transport is not None and scope.get("method") == "POST" and request_path.startswith("/messages"):
             session_id_hex = query_params.get("session_id")
-            if session_id_hex and self._sse_transport is not None:
+            if session_id_hex:
                 try:
                     sid = UUID(hex=session_id_hex)
                 except ValueError:
@@ -192,16 +199,6 @@ class SecureFastMCP(FastMCP):
         # Get the standard FastMCP Starlette app
         app = super().sse_app(mount_path)
 
-        # Add CORS support so your Vercel frontend can call this EC2 backend
-        from starlette.middleware.cors import CORSMiddleware
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],  # Restrict this to your Vercel domains in production
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
         # Grab the SseServerTransport instance so the middleware can poll for
         # session readiness instead of using a blind sleep.
         sse_transport = None
@@ -214,13 +211,23 @@ class SecureFastMCP(FastMCP):
                     sse_transport = handler.__self__
                     break
 
-        # Register our secure middleware inside Starlette's middleware stack
-        # This keeps the app type as Starlette so Uvicorn can run the lifespan/startup events correctly
+        # Register our secure middleware inside Starlette's middleware stack (Inner layer)
         rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
         app.add_middleware(
             SecureASGIMiddleware,
             calls_per_minute=rate_limit,
             sse_transport=sse_transport,
+        )
+
+        # Add CORS support (Outer layer - added last for LIFO execution order)
+        # Note: allow_credentials must be False when allow_origins is "*"
+        from starlette.middleware.cors import CORSMiddleware
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Restrict this to your Vercel domains in production
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
         )
 
         if sse_transport:
@@ -237,22 +244,23 @@ class SecureFastMCP(FastMCP):
         # Get the standard FastMCP Starlette app
         app = super().streamable_http_app()
 
-        # Add CORS support so your Vercel frontend can call this EC2 backend
-        from starlette.middleware.cors import CORSMiddleware
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],  # Restrict this to your Vercel domains in production
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
-        # Register our secure middleware inside Starlette's middleware stack
+        # Register our secure middleware inside Starlette's middleware stack (Inner layer)
         rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
         app.add_middleware(
             SecureASGIMiddleware,
             calls_per_minute=rate_limit,
             sse_transport=None,
+        )
+
+        # Add CORS support (Outer layer - added last for LIFO execution order)
+        # Note: allow_credentials must be False when allow_origins is "*"
+        from starlette.middleware.cors import CORSMiddleware
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Restrict this to your Vercel domains in production
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
         )
         return app
 
