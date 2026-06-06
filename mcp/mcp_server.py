@@ -129,13 +129,12 @@ class SecureFastMCP(FastMCP):
             allow_headers=["*"],
         )
         
-        # Wrap the Starlette application with our Secure ASGI middleware
+        # Register our secure middleware inside Starlette's middleware stack
+        # This keeps the app type as Starlette so Uvicorn can run the lifespan/startup events correctly
         rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
+        app.add_middleware(SecureASGIMiddleware, calls_per_minute=rate_limit)
         
-        # We can add ASGI middleware directly to Starlette by wrapping it
-        wrapped_app = SecureASGIMiddleware(app, calls_per_minute=rate_limit)
-        return wrapped_app
-
+        return app
 
 
 # ── Server setup ─────────────────────────────────────────────────────────────
@@ -157,11 +156,14 @@ mcp = SecureFastMCP(
 
 
 # Lazy-init the graph so import doesn't block server startup
-_graph_instance = None
+_graph_instances = {}
 
 def _get_graph(analysts=None):
-    global _graph_instance
-    if _graph_instance is None:
+    global _graph_instances
+    analyst_list = analysts or ["market", "social", "news", "fundamentals"]
+    analyst_tuple = tuple(sorted(analyst_list))
+    
+    if analyst_tuple not in _graph_instances:
         from orbisquantagents.graph.orbis_quant_graph import OrbisQuantAgentsGraph
         from orbisquantagents.default_config import DEFAULT_CONFIG
 
@@ -171,12 +173,12 @@ def _get_graph(analysts=None):
         cfg["llm_provider"]    = os.getenv("LLM_PROVIDER",    cfg["llm_provider"])
         cfg["max_debate_rounds"] = 1
 
-        _graph_instance = OrbisQuantAgentsGraph(
-            selected_analysts=analysts or ["market", "social", "news", "fundamentals"],
+        _graph_instances[analyst_tuple] = OrbisQuantAgentsGraph(
+            selected_analysts=analyst_list,
             debug=False,
             config=cfg,
         )
-    return _graph_instance
+    return _graph_instances[analyst_tuple]
 
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
