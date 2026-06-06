@@ -118,12 +118,23 @@ class SecureFastMCP(FastMCP):
         # Get the standard FastMCP Starlette app
         app = super().sse_app(mount_path)
         
+        # Add CORS support so your Vercel frontend can call this EC2 backend
+        from starlette.middleware.cors import CORSMiddleware
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Restrict this to your Vercel domains in production
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
         # Wrap the Starlette application with our Secure ASGI middleware
         rate_limit = int(os.getenv("MCP_RATE_LIMIT", "30"))
         
         # We can add ASGI middleware directly to Starlette by wrapping it
         wrapped_app = SecureASGIMiddleware(app, calls_per_minute=rate_limit)
         return wrapped_app
+
 
 
 # ── Server setup ─────────────────────────────────────────────────────────────
