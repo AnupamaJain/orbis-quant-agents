@@ -1146,37 +1146,13 @@ async def get_price_snapshot(symbol: str) -> str:
     return await asyncio.to_thread(_get_price_snapshot_sync, symbol)
 
 
-@mcp.tool()
 async def analyze_stock(
     symbol: str,
     trade_date: Optional[str] = None,
     analysts: Optional[str] = "market,social,news,fundamentals",
     ctx: Context = None,
 ) -> str:
-    """
-    ALL-IN-ONE pipeline — runs all analysts + debate + PM verdict in one call.
-
-    PREFER the staged flow (get_price_snapshot → get_technical_analysis →
-    get_fundamental_analysis → get_sentiment_analysis → debate_trade) because
-    it lets you narrate after each step. Use this tool only when the user
-    explicitly asks for a "full analysis in one go" or "quick summary."
-
-    Runs 7 agents in sequence (takes 2–15 min depending on the LLM provider):
-      1. Technical analyst  — price action, Camarilla levels, RSI, MACD
-      2. Fundamental analyst — PE, EPS, revenue, promoter holding, debt
-      3. Sentiment analyst  — social tone, FII/DII flows
-      4. News analyst       — recent filings, SEBI alerts, headlines
-      5. Bull researcher    — builds the bullish thesis
-      6. Bear researcher    — builds the counter-case
-      7. Portfolio Manager  — weighs both sides, issues BUY / SELL / HOLD
-
-    Returns a full markdown report with all analyst findings and the verdict.
-
-    Args:
-        symbol:     NSE/BSE ticker (e.g. "RELIANCE.NS", "INFY.NS"). Append .NS for NSE.
-        trade_date: Analysis date as YYYY-MM-DD. Defaults to today.
-        analysts:   Comma-separated subset: market, social, news, fundamentals.
-    """
+    """Internal pipeline — called by the staged MCP tools, not exposed directly."""
     if not symbol.endswith((".NS", ".BO")):
         symbol = symbol.upper() + ".NS"
 
@@ -1188,6 +1164,7 @@ async def analyze_stock(
     primary_provider = os.getenv("LLM_PROVIDER", "openai")
     fallback_provider = os.getenv("FALLBACK_LLM_PROVIDER")
     model = os.getenv("DEEP_THINK_LLM", "unknown")
+    _t0 = time.monotonic()  # wall-clock start for timing header
     team_str = "  ·  ".join(_ANALYST_LABELS.get(a, a.title()) for a in analyst_list)
     n_agents = len(analyst_list) + 3  # analysts + bull + bear + PM
 
@@ -1252,9 +1229,19 @@ async def analyze_stock(
         except (asyncio.CancelledError, Exception):
             pass
 
+    def _timing_header(elapsed: float, provider: str, mdl: str) -> str:
+        mins, secs = divmod(int(elapsed), 60)
+        t = f"{mins}m {secs}s" if mins else f"{secs}s"
+        return (
+            f"```\n"
+            f"⏱  Completed in {t}  |  {provider} / {mdl}\n"
+            f"```\n"
+        )
+
     try:
         result = await asyncio.to_thread(_run_pipeline, symbol, trade_date, analyst_list)
         await _finish_updater()
+        elapsed = time.monotonic() - _t0
 
         decision = result.get("decision", "UNKNOWN")
         if isinstance(decision, dict):
@@ -1265,7 +1252,7 @@ async def analyze_stock(
         else:
             await emit(f"Analysis complete — Verdict: {decision}")
 
-        return _format_analysis_report(result)
+        return _timing_header(elapsed, primary_provider, model) + _format_analysis_report(result)
 
     except Exception as primary_exc:
         await _finish_updater()
@@ -1285,11 +1272,12 @@ async def analyze_stock(
                 )
                 result["provider_used"] = fallback_provider
                 result["primary_error"] = str(primary_exc)[:200]
+                elapsed = time.monotonic() - _t0
 
                 decision = result.get("decision", "UNKNOWN")
                 verdict = decision.get("decision", decision) if isinstance(decision, dict) else decision
                 await emit(f"Fallback analysis complete — Verdict: {verdict}")
-                return _format_analysis_report(result)
+                return _timing_header(elapsed, fallback_provider, model) + _format_analysis_report(result)
 
             except Exception as fallback_exc:
                 logger.exception("Fallback provider %s also failed for %s", fallback_provider, symbol)
