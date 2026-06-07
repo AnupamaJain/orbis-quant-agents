@@ -52,6 +52,13 @@ def build_instrument_context(ticker: str) -> str:
             "reference insights from Indian financial news outlets like Moneycontrol, The Economic Times, or Mint."
         )
     
+    context += (
+        "\nFormatting Instruction: Your output report must be a direct, readable analysis in clean Markdown (using "
+        "standard paragraphs, bullet points, or markdown tables). **NEVER write, simulate, or output Python code, "
+        "scripts, print statements, or mock JSON code blocks (e.g. do not output code blocks starting with `python ...` "
+        "or `import json`).** Write out your analysis, findings, and recommendations directly in markdown text."
+    )
+    
     return context
 
 def create_msg_delete():
