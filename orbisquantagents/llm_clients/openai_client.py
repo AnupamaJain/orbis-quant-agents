@@ -75,11 +75,12 @@ class OpenAIClient(BaseLLMClient):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
-        # Ollama needs a longer timeout — local models are slow to generate long
-        # financial reports (and may need time to load into memory on first call).
-        # Override with OLLAMA_TIMEOUT env var for tuning.
+        # Ollama timeout: short enough to fail fast when the remote instance is
+        # unreachable (ngrok down, laptop asleep) so the MCP server can fall back
+        # to a cloud provider quickly.  Override with OLLAMA_TIMEOUT env var —
+        # raise it only when running Ollama locally with reliable connectivity.
         if self.provider == "ollama":
-            default_timeout = float(os.environ.get("OLLAMA_TIMEOUT", "180"))
+            default_timeout = float(os.environ.get("OLLAMA_TIMEOUT", "60"))
         else:
             default_timeout = 45.0
         llm_kwargs.setdefault("timeout", default_timeout)

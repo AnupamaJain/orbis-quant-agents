@@ -313,11 +313,22 @@ mcp = SecureFastMCP(
     stateless_http=is_stateless,
     json_response=False,   # stream SSE so Railway's 120s HTTP timeout never fires
     instructions=(
-        "Multi-agent quantitative analysis for Indian stock markets (NSE/BSE). "
-        "Runs Technical, Fundamental, Sentiment and News agents followed by a "
-        "Bullish vs Bearish research debate and a Portfolio Manager decision. "
-        "Use analyze_stock for full pipeline. Use individual tools for faster, "
-        "targeted queries."
+        "You are Orbis Quant, an AI-powered stock analyst for Indian markets (NSE/BSE).\n\n"
+        "ALWAYS follow this staged workflow — never call analyze_stock directly as the first step:\n"
+        "1. Call get_price_snapshot(symbol) first — returns live price, PE, volume in ~2 seconds. "
+        "Narrate what you see: price trend, how volume compares to average, valuation vs sector.\n"
+        "2. Call get_technical_analysis(symbol) — RSI, MACD, support/resistance. "
+        "After it returns, explain what the chart is saying in plain English.\n"
+        "3. Call get_fundamental_analysis(symbol) if the user wants depth — PE, EPS, promoter holding. "
+        "Comment on whether the valuation is attractive.\n"
+        "4. Call get_sentiment_analysis(symbol) if relevant — news tone, FII/DII flows. "
+        "Highlight the most important recent development.\n"
+        "5. Call debate_trade(symbol) for the full bull/bear debate and final BUY/SELL/HOLD verdict. "
+        "Present the verdict clearly with your own view.\n\n"
+        "For quick pre-market checks or watchlist screening, use get_technical_analysis or "
+        "screen_watchlist directly — no need for the full 5-step flow.\n\n"
+        "Speak like a seasoned analyst: direct, specific, no filler. "
+        "Always quote the actual numbers from tool results."
     ),
 )
 
@@ -623,11 +634,18 @@ def _get_graph(analysts=None, provider_override: str | None = None):
 
 
 def _is_provider_limit_error(exc: Exception) -> bool:
-    """Return True if the error is a transient rate-limit or overload from the LLM provider."""
+    """Return True if the error should trigger a fallback retry on a different provider.
+
+    Covers: quota exhaustion, rate limits, overload, AND timeouts — because a
+    slow local Ollama instance timing out on the first provider should still
+    fall back to a fast cloud provider rather than returning an empty error.
+    """
     s = str(exc).lower()
     return any(x in s for x in (
         "503", "429", "resource_exhausted", "overloaded",
         "rate limit", "quota", "too many requests",
+        "timed out", "timeout", "apitimeouterror",
+        "connection error", "connection refused", "remotedisconnected",
     ))
 
 
@@ -876,16 +894,18 @@ _ANALYST_STAGE_DESCS = {
 @mcp.tool()
 async def get_price_snapshot(symbol: str) -> str:
     """
-    Instantly fetch live market data for a stock — no AI, pure market data.
+    STEP 1 — Always call this first. Instant live market data, no AI needed.
 
-    Returns current price, day range, 52-week range, volume (vs average),
-    market cap, PE ratio, EPS, and book value. Responds in under 5 seconds.
+    Returns in ~2 seconds: current price + % change, day range, 52-week range,
+    volume vs average (flags unusual activity), market cap, PE ratio, EPS,
+    book value.
 
-    Use this FIRST before calling analyze_stock so the user gets immediate
-    price context while the full AI pipeline warms up.
+    After this returns, narrate what the numbers mean — is it near a 52-week
+    high/low? Is volume unusually high (potential breakout or dump)?
+    Is the PE cheap or expensive vs sector? Then proceed to get_technical_analysis.
 
     Args:
-        symbol: NSE/BSE ticker (e.g. "RELIANCE", "TCS", "NIFTY"). .NS added automatically.
+        symbol: NSE/BSE ticker (e.g. "RELIANCE", "TCS", "NIFTY"). .NS suffix added automatically.
     """
     if not symbol.endswith((".NS", ".BO")):
         symbol = symbol.upper() + ".NS"
@@ -900,29 +920,28 @@ async def analyze_stock(
     ctx: Context = None,
 ) -> str:
     """
-    Run the full Orbis multi-agent analysis pipeline on a stock.
+    ALL-IN-ONE pipeline — runs all analysts + debate + PM verdict in one call.
 
-    Agents run in sequence:
-      1. Technical analyst  — price action, Camarilla levels, trend
-      2. Fundamental analyst — PE, EPS, revenue, promoter holding
-      3. Sentiment analyst  — news tone, social, FII/DII flows
-      4. News analyst       — recent events, SEBI filings
-      5. Bullish researcher — makes the bull case
-      6. Bearish researcher — makes the bear case
-      7. Portfolio manager  — final verdict: BUY / SELL / HOLD + confidence
+    PREFER the staged flow (get_price_snapshot → get_technical_analysis →
+    get_fundamental_analysis → get_sentiment_analysis → debate_trade) because
+    it lets you narrate after each step. Use this tool only when the user
+    explicitly asks for a "full analysis in one go" or "quick summary."
+
+    Runs 7 agents in sequence (takes 2–15 min depending on the LLM provider):
+      1. Technical analyst  — price action, Camarilla levels, RSI, MACD
+      2. Fundamental analyst — PE, EPS, revenue, promoter holding, debt
+      3. Sentiment analyst  — social tone, FII/DII flows
+      4. News analyst       — recent filings, SEBI alerts, headlines
+      5. Bull researcher    — builds the bullish thesis
+      6. Bear researcher    — builds the counter-case
+      7. Portfolio Manager  — weighs both sides, issues BUY / SELL / HOLD
+
+    Returns a full markdown report with all analyst findings and the verdict.
 
     Args:
         symbol:     NSE/BSE ticker (e.g. "RELIANCE.NS", "INFY.NS"). Append .NS for NSE.
         trade_date: Analysis date as YYYY-MM-DD. Defaults to today.
-        analysts:   Comma-separated analyst types to include.
-                    Options: market, social, news, fundamentals
-                    Default: all four.
-
-    Returns:
-        Markdown-formatted intelligence report: per-analyst findings, bull/bear
-        debate summary, investment plan, and final BUY / SELL / HOLD verdict.
-        Call get_price_snapshot first for an instant market data preview while
-        this longer analysis runs.
+        analysts:   Comma-separated subset: market, social, news, fundamentals.
     """
     if not symbol.endswith((".NS", ".BO")):
         symbol = symbol.upper() + ".NS"
@@ -1062,10 +1081,16 @@ async def analyze_stock(
 @mcp.tool()
 async def get_technical_analysis(symbol: str) -> str:
     """
-    Run only the technical analyst agent — fast, no fundamental or news data needed.
+    STEP 2 — AI technical analyst. Call after get_price_snapshot.
 
-    Returns Camarilla pivot levels, trend direction, RSI, MACD, support/resistance.
-    Useful for quick pre-market setup validation.
+    Runs the technical analyst agent. Returns Camarilla pivot levels, trend
+    direction (above/below 50/200 DMA), RSI with overbought/oversold signal,
+    MACD crossover status, key support and resistance zones.
+
+    After this returns, explain the chart setup in plain English:
+    Is the stock in an uptrend or downtrend? Is RSI showing momentum or
+    exhaustion? What are the key levels to watch? Then offer to go deeper
+    with get_fundamental_analysis or get_sentiment_analysis.
 
     Args:
         symbol: NSE ticker (e.g. "RELIANCE", "TCS"). .NS suffix added automatically.
@@ -1076,10 +1101,15 @@ async def get_technical_analysis(symbol: str) -> str:
 @mcp.tool()
 async def get_fundamental_analysis(symbol: str) -> str:
     """
-    Run only the fundamental analyst agent.
+    STEP 3 — AI fundamental analyst. Call after get_technical_analysis.
 
-    Returns PE ratio, EPS trend, revenue growth, debt levels, promoter holding,
-    FII/DII ownership, and valuation vs sector peers.
+    Returns PE ratio vs sector average, EPS trend (growing/shrinking),
+    revenue and profit growth YoY, promoter holding % and direction,
+    FII/DII ownership trends, debt-to-equity ratio, and valuation verdict.
+
+    After this returns, give an opinion: Is the stock cheap or expensive
+    relative to its growth? Is promoter holding declining (red flag)?
+    Is debt manageable? Then move to get_sentiment_analysis.
 
     Args:
         symbol: NSE ticker (e.g. "HDFCBANK", "WIPRO"). .NS suffix added automatically.
@@ -1090,13 +1120,18 @@ async def get_fundamental_analysis(symbol: str) -> str:
 @mcp.tool()
 async def get_sentiment_analysis(symbol: str) -> str:
     """
-    Run sentiment + news agents — no technical or fundamental data.
+    STEP 4 — AI news and sentiment analyst. Call after get_fundamental_analysis.
 
-    Returns recent news sentiment score, social media tone, key headlines,
-    SEBI filings/announcements, and institutional flow signals.
+    Returns recent news sentiment score, key headlines from the last 7 days,
+    SEBI filings and corporate announcements, FII/DII net flow direction,
+    and social media retail sentiment tone.
+
+    After this returns, highlight the single most important news item or
+    sentiment signal. Is there a catalyst (earnings, acquisition, SEBI order)?
+    Is smart money (FII/DII) accumulating or distributing? Then move to debate_trade.
 
     Args:
-        symbol: NSE ticker.
+        symbol: NSE ticker. .NS suffix added automatically.
     """
     return await analyze_stock(symbol=symbol, analysts="social,news")
 
@@ -1104,17 +1139,19 @@ async def get_sentiment_analysis(symbol: str) -> str:
 @mcp.tool()
 async def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
     """
-    Run the full bull vs bear research debate for a stock.
+    STEP 5 — Final step. Bull vs bear debate + Portfolio Manager verdict.
 
-    Includes:
-      - Bullish researcher: best-case thesis with supporting evidence
-      - Bearish researcher: counter-arguments and risk factors
-      - Portfolio manager: final risk-adjusted verdict
+    Runs all four analyst agents, then:
+    - Bull researcher builds the best-case thesis with evidence
+    - Bear researcher challenges it with risks and counter-arguments
+    - Portfolio Manager weighs both sides and issues BUY / SELL / HOLD
+      with a confidence score and suggested entry/stop/target levels
 
-    Best used when you want a balanced view before committing to a position.
+    After this returns, present the final verdict clearly and give your own
+    view on whether the bull or bear case is stronger based on all the data.
 
     Args:
-        symbol:     NSE ticker.
+        symbol:     NSE ticker. .NS suffix added automatically.
         trade_date: YYYY-MM-DD. Defaults to today.
     """
     return await analyze_stock(symbol=symbol, trade_date=trade_date,
