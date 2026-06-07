@@ -311,7 +311,7 @@ mcp = SecureFastMCP(
     host="0.0.0.0",
     port=_PORT,
     stateless_http=is_stateless,
-    json_response=is_stateless,
+    json_response=False,   # stream SSE so Railway's 120s HTTP timeout never fires
     instructions=(
         "Multi-agent quantitative analysis for Indian stock markets (NSE/BSE). "
         "Runs Technical, Fundamental, Sentiment and News agents followed by a "
@@ -783,25 +783,31 @@ async def analyze_stock(
     await emit(f"Analyst team: {team_str}")
     await emit("Pipeline started — each agent runs in sequence, building on the previous")
 
-    # Background updater sends one stage message every ~35 s while the thread runs
-    stop_event = asyncio.Event()
+    # Background updater sends one stage message every ~35 s while the thread runs.
+    # Uses a simple 1-second sleep loop so task cancellation is always clean —
+    # no asyncio.wait_for whose exception type changed in Python 3.12.
+    cancelled = False
 
     async def _stage_updater():
         for i, stage in enumerate(stages, 1):
-            if stop_event.is_set():
-                break
+            if cancelled:
+                return
             await emit(f"[{i}/{len(stages)}] {stage}…")
-            try:
-                await asyncio.wait_for(stop_event.wait(), timeout=35)
-                break  # pipeline finished early
-            except asyncio.TimeoutError:
-                pass  # move to next stage label
+            for _ in range(35):
+                if cancelled:
+                    return
+                await asyncio.sleep(1)
 
     updater_task = asyncio.create_task(_stage_updater())
 
     async def _finish_updater():
-        stop_event.set()
-        await asyncio.gather(updater_task, return_exceptions=True)
+        nonlocal cancelled
+        cancelled = True
+        updater_task.cancel()
+        try:
+            await updater_task
+        except (asyncio.CancelledError, Exception):
+            pass
 
     try:
         result = await asyncio.to_thread(_run_pipeline, symbol, trade_date, analyst_list)
