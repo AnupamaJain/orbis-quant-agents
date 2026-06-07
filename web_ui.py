@@ -766,7 +766,39 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
     total = len(headlines)
     bull_pct = int((bull_cnt / total) * 100) if total > 0 else 50
     mood_pos = max(10, min(90, bull_pct))
-    
+
+    # Build real mention counts from headline text
+    _all_text = " ".join(h["title"] for h in headlines).upper()
+    _ticker_base = ticker.split(".")[0].upper()
+    _candidates = {
+        _ticker_base:  _all_text.count(_ticker_base),
+        "NIFTY":       _all_text.count("NIFTY"),
+        "FII":         _all_text.count("FII") + _all_text.count("FOREIGN INSTITUTION"),
+        "RBI":         _all_text.count("RBI") + _all_text.count("RESERVE BANK"),
+        "SEBI":        _all_text.count("SEBI"),
+        "SENSEX":      _all_text.count("SENSEX"),
+        "NSE":         _all_text.count("NSE"),
+    }
+    # Drop the primary ticker from the secondary list to avoid duplicate rank-1
+    _secondary = {k: v for k, v in _candidates.items() if k != _ticker_base and v > 0}
+    _top3 = [(k, v) for k, v in sorted(_candidates.items(), key=lambda x: -x[1])[:3]]
+    if not _top3 or _top3[0][1] == 0:
+        _top3 = [(_ticker_base, 1), ("NIFTY", 0), ("FII", 0)]
+    _max_cnt = max(c for _, c in _top3) or 1
+    _bar_colors = ["#D97757", "#D4CEC5", "#D4CEC5"]
+    _mentions_rows_html = '<div style="display:flex;flex-direction:column;gap:8px;">'
+    for _i, (_kw, _cnt) in enumerate(_top3):
+        _bar_w = max(8, int((_cnt / _max_cnt) * 120))
+        _mentions_rows_html += (
+            f'<div style="display:flex;align-items:center;gap:8px;font-size:11px;">'
+            f'<span style="width:12px;color:#6B6560;font-weight:700;">{_i+1}</span>'
+            f'<span style="width:70px;font-weight:700;color:#1A1714;">{_kw}</span>'
+            f'<div style="flex:1;height:8px;background-color:{_bar_colors[_i]};border-radius:4px;overflow:hidden;max-width:{_bar_w}px;"></div>'
+            f'<span style="color:#6B6560;font-weight:600;">{_cnt}</span>'
+            f'</div>'
+        )
+    _mentions_rows_html += '</div>'
+
     # Right Widgets Bar (HTML)
     right_widgets_html = f"""
     <div style="display: flex; flex-direction: column; gap: 12px; width: 280px; flex-shrink: 0; min-width: 250px;">
@@ -786,32 +818,13 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
             </div>
         </div>
         
-        <!-- Symbols In News Mentions Widget -->
+        <!-- Symbols In News Mentions Widget — counted from actual headlines -->
         <div style="background-color: #FDFCFA; border: 0.5px solid #E8E3DB; border-radius: 8px; padding: 12px 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 12px; font-weight: 700; color: #1A1714;"># Mentions in feed</span>
-                <span style="font-size: 10px; color: #6B6560;">Mentions</span>
+                <span style="font-size: 10px; color: #6B6560;">Count</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #6B6560; font-weight: 700;">1</span>
-                    <span style="width: 70px; font-weight: 700; color: #1A1714;">{ticker.split('.')[0]}</span>
-                    <div style="flex: 1; height: 8px; background-color: #D97757; border-radius: 4px; overflow: hidden; max-width: 120px;"></div>
-                    <span style="color: #6B6560; font-weight: 600;">8</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #6B6560; font-weight: 700;">2</span>
-                    <span style="width: 70px; font-weight: 700; color: #1A1714;">NIFTY</span>
-                    <div style="flex: 1; height: 8px; background-color: #D4CEC5; border-radius: 4px; overflow: hidden; max-width: 60px;"></div>
-                    <span style="color: #6B6560; font-weight: 600;">4</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
-                    <span style="width: 12px; color: #6B6560; font-weight: 700;">3</span>
-                    <span style="width: 70px; font-weight: 700; color: #1A1714;">FII</span>
-                    <div style="flex: 1; height: 8px; background-color: #D4CEC5; border-radius: 4px; overflow: hidden; max-width: 30px;"></div>
-                    <span style="color: #6B6560; font-weight: 600;">2</span>
-                </div>
-            </div>
+            {_mentions_rows_html}
         </div>
     </div>
     """
@@ -842,6 +855,36 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
     # Collapse blank lines so Markdown never exits the HTML block mid-way
     combined_html = _re.sub(r'\n\n+', '\n', combined_html)
     return combined_html.strip()
+
+@st.cache_data(ttl=60)
+def fetch_indices():
+    """Fetch live prices for major Indian indices. Cached for 60 s."""
+    _indices = [
+        ("NIFTY",      "^NSEI"),
+        ("BANKNIFTY",  "^NSEBANK"),
+        ("FINNIFTY",   "^CNXFIN"),
+        ("MIDCPNIFTY", "^NSEMDCP50"),
+        ("VIX",        "^INDIAVIX"),
+        ("SENSEX",     "^BSESN"),
+    ]
+    results = []
+    for name, sym in _indices:
+        try:
+            fi = yf.Ticker(sym).fast_info
+            price = fi.last_price
+            prev  = fi.previous_close
+            if price is not None and prev and prev > 0:
+                chg     = (price - prev) / prev * 100
+                cls     = "up" if chg >= 0 else "down"
+                chg_str = f"+{chg:.2f}%" if chg >= 0 else f"{chg:.2f}%"
+                p_str   = f"{price:.2f}" if name == "VIX" else f"{price:,.2f}"
+                results.append((name, p_str, chg_str, cls))
+            else:
+                results.append((name, "—", "—", "down"))
+        except Exception:
+            results.append((name, "—", "—", "down"))
+    return results
+
 
 def fetch_market_data(ticker, period="1y"):
     """Fetch historical data for the chart using yfinance natively."""
@@ -992,18 +1035,18 @@ def display_chart(data, ticker):
     
     st.plotly_chart(fig, use_container_width=True)
 
-# Sticky top horizontal indices ticker bar
-st.markdown("""
-<div class="top-ticker-bar">
-    <div class="ticker-item"><span class="ticker-name">NIFTY</span> <span class="ticker-val">23,296.95</span> <span class="ticker-change down">-0.37%</span></div>
-    <div class="ticker-item"><span class="ticker-name">BANKNIFTY</span> <span class="ticker-val">53,241.35</span> <span class="ticker-change down">-0.75%</span></div>
-    <div class="ticker-item"><span class="ticker-name">FINNIFTY</span> <span class="ticker-val">24,707.25</span> <span class="ticker-change down">-1.20%</span></div>
-    <div class="ticker-item"><span class="ticker-name">MIDCPNIFTY</span> <span class="ticker-val">17,162.85</span> <span class="ticker-change down">-0.67%</span></div>
-    <div class="ticker-item"><span class="ticker-name">VIX</span> <span class="ticker-val">16.00</span> <span class="ticker-change up">-3.26%</span></div>
-    <div class="ticker-item"><span class="ticker-name">GIFT</span> <span class="ticker-val">23,348.5</span> <span class="ticker-change down">-0.29%</span></div>
-    <div class="ticker-live-badge"><span class="pulse-dot"></span> LIVE</div>
-</div>
-""", unsafe_allow_html=True)
+# Sticky top horizontal indices ticker bar — live prices via yfinance
+_idx_items = "".join(
+    f'<div class="ticker-item"><span class="ticker-name">{n}</span> '
+    f'<span class="ticker-val">{p}</span> '
+    f'<span class="ticker-change {c}">{ch}</span></div>'
+    for n, p, ch, c in fetch_indices()
+)
+st.markdown(
+    f'<div class="top-ticker-bar">{_idx_items}'
+    f'<div class="ticker-live-badge"><span class="pulse-dot"></span> LIVE</div></div>',
+    unsafe_allow_html=True,
+)
 
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
@@ -1142,14 +1185,16 @@ analyst_labels = {
     "small_cap": "Small Cap & PSU Analyst"
 }
 
-def complete_step(states, label, duration):
+def complete_step(states, label, duration, step_starts=None):
     for idx, (lbl, status, _) in enumerate(states):
         if lbl == label:
             states[idx] = (lbl, "done", duration)
-            # Find the next pending step and mark it running
             for next_idx in range(idx + 1, len(states)):
                 if states[next_idx][1] == "pending":
-                    states[next_idx] = (states[next_idx][0], "running", "")
+                    next_label = states[next_idx][0]
+                    states[next_idx] = (next_label, "running", "")
+                    if step_starts is not None:
+                        step_starts[next_label] = time.time()
                     break
             break
 
@@ -1392,17 +1437,29 @@ if start_btn:
     final_container.write("")
 
     try:
+        _t0 = time.time()
+        _step_start: dict = {}  # step label -> start timestamp
+        # Seed start times for all steps already in "running" state
+        for _lbl, _st, _ in progress_states:
+            if _st == "running":
+                _step_start[_lbl] = _t0
+
+        def _elapsed(label: str) -> str:
+            start = _step_start.pop(label, _t0)
+            secs = int(time.time() - start)
+            return f"{secs}s"
+
         with st.spinner(f"Agents are gathering intelligence for {ticker}..."):
             for chunk in graph.stream_analysis(ticker, analysis_date.strftime("%Y-%m-%d")):
                 if "market_report" in chunk and chunk["market_report"]:
                     if "Market" in analyst_containers:
-                        complete_step(progress_states, "Market Analyst", "12s")
+                        complete_step(progress_states, "Market Analyst", _elapsed("Market Analyst"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Market"].markdown(f'<div class="report-content">\n\n{chunk["market_report"]}\n\n</div>', unsafe_allow_html=True)
-                
+
                 if "news_report" in chunk and chunk["news_report"]:
                     if "News" in analyst_containers:
-                        complete_step(progress_states, "News & Macro Analyst", "18s")
+                        complete_step(progress_states, "News & Macro Analyst", _elapsed("News & Macro Analyst"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         try:
                             news_html = render_news_desk_html(
@@ -1417,34 +1474,34 @@ if start_btn:
                                 f'<div class="report-content">\n\n{chunk["news_report"]}\n\n</div>',
                                 unsafe_allow_html=True
                             )
-                
+
                 if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
                     if "Fundamentals" in analyst_containers:
-                        complete_step(progress_states, "Fundamentals Analyst", "21s")
+                        complete_step(progress_states, "Fundamentals Analyst", _elapsed("Fundamentals Analyst"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Fundamentals"].markdown(f'<div class="report-content">\n\n{chunk["fundamentals_report"]}\n\n</div>', unsafe_allow_html=True)
-                
+
                 if "sentiment_report" in chunk and chunk["sentiment_report"]:
                     if "Social" in analyst_containers:
-                        complete_step(progress_states, "Social Analyst", "15s")
+                        complete_step(progress_states, "Social Analyst", _elapsed("Social Analyst"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Social"].markdown(f'<div class="report-content">\n\n{chunk["sentiment_report"]}\n\n</div>', unsafe_allow_html=True)
-    
+
                 if "small_cap_report" in chunk and chunk["small_cap_report"]:
                     if "Small Cap & PSU" in analyst_containers:
-                        complete_step(progress_states, "Small Cap & PSU Analyst", "20s")
+                        complete_step(progress_states, "Small Cap & PSU Analyst", _elapsed("Small Cap & PSU Analyst"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                         analyst_containers["Small Cap & PSU"].markdown(f'<div class="report-content">\n\n{chunk["small_cap_report"]}\n\n</div>', unsafe_allow_html=True)
-    
+
                 if "investment_debate_state" in chunk:
                     debate = chunk["investment_debate_state"]
-                    # Mark Bull & Bear Debate as running if it's pending
                     for idx, (lbl, status, _) in enumerate(progress_states):
                         if lbl == "Bull & Bear Debate" and status == "pending":
                             progress_states[idx] = (lbl, "running", "")
+                            _step_start["Bull & Bear Debate"] = time.time()
                             progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
                             break
-                    
+
                     if debate.get("bull_history"):
                         bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
                         _bull_target = _parse_price_target(debate["bull_history"])
@@ -1454,13 +1511,13 @@ if start_btn:
                         _bear_target = _parse_price_target(debate["bear_history"])
                         bear_downside_box.markdown(f'<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">{_bear_target}</div></div>', unsafe_allow_html=True)
                     if debate.get("judge_decision"):
-                        complete_step(progress_states, "Bull & Bear Debate", "24s")
-                        complete_step(progress_states, "AI Trader", "8s")
-                        complete_step(progress_states, "Risk Audit", "14s")
+                        complete_step(progress_states, "Bull & Bear Debate", _elapsed("Bull & Bear Debate"), _step_start)
+                        complete_step(progress_states, "AI Trader", _elapsed("AI Trader"), _step_start)
+                        complete_step(progress_states, "Risk Audit", _elapsed("Risk Audit"), _step_start)
                         progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-    
+
                 if "final_trade_decision" in chunk and chunk["final_trade_decision"]:
-                     complete_step(progress_states, "Portfolio Manager", "9s")
+                     complete_step(progress_states, "Portfolio Manager", _elapsed("Portfolio Manager"), _step_start)
                      progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
 
                      final_decision = chunk['final_trade_decision']
