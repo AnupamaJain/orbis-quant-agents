@@ -75,6 +75,11 @@ class SecureASGIMiddleware:
             }, status_code=200)
             return
 
+        # /connect is a public onboarding page — no auth required
+        if request_path == "/connect" and scope.get("method") in ("GET", "HEAD"):
+            await self.app(scope, receive, send)
+            return
+
         # 1. API Key verification (Bypass /messages paths since they rely on the session_id handshake)
         expected_key = os.getenv("MCP_API_KEY")
         if expected_key and not request_path.startswith("/messages"):
