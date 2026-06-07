@@ -804,8 +804,10 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
     import re as _re
     # Remove HTML comments (they break CommonMark HTML block mode after blank lines)
     combined_html = _re.sub(r'<!--.*?-->', '', combined_html, flags=_re.DOTALL)
+    # Strip per-line indentation — CommonMark treats lines with 4+ leading spaces as code blocks
+    combined_html = _re.sub(r'\n[ \t]+', '\n', combined_html)
     # Collapse blank lines so Markdown never exits the HTML block mid-way
-    combined_html = _re.sub(r'\n[ \t]*\n', '\n', combined_html)
+    combined_html = _re.sub(r'\n\n+', '\n', combined_html)
     return combined_html.strip()
 
 def fetch_market_data(ticker, period="1y"):
