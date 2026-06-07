@@ -701,6 +701,163 @@ def _run_pipeline(symbol: str, trade_date: str, analyst_list: list[str],
     return result
 
 
+def _fmt(text: str | None, fallback: str = "") -> str:
+    """Return text stripped, or fallback if empty."""
+    return (text or "").strip() or fallback
+
+
+def _format_analysis_report(result: dict) -> str:
+    """
+    Convert the raw pipeline result dict into a readable markdown report
+    so Claude can present it conversationally rather than as raw JSON.
+    """
+    symbol = result.get("symbol", "?")
+    trade_date = result.get("trade_date", "?")
+    analysts_used = result.get("analysts", [])
+    decision = result.get("decision", "UNKNOWN")
+    if isinstance(decision, dict):
+        verdict   = decision.get("decision", "UNKNOWN")
+        confidence = decision.get("confidence")
+        reason    = decision.get("reason", "")
+    else:
+        verdict    = str(decision)
+        confidence = None
+        reason     = ""
+
+    provider = result.get("provider_used", os.getenv("LLM_PROVIDER", "?"))
+    model    = os.getenv("DEEP_THINK_LLM", "?")
+
+    _VERDICT_EMOJI = {"BUY": "🟢", "SELL": "🔴", "HOLD": "🟡"}
+    emoji = _VERDICT_EMOJI.get(verdict.upper(), "⚪")
+
+    lines = [
+        f"# Orbis Quant Intelligence — {symbol}",
+        f"*{trade_date}  ·  {', '.join(a.title() for a in analysts_used)} analysts  ·  {model} via {provider}*",
+        "",
+    ]
+
+    # Per-analyst reports
+    _SECTION = {
+        "market_report":       ("📊", "Technical Analysis"),
+        "fundamentals_report": ("📈", "Fundamental Analysis"),
+        "news_report":         ("📰", "News Analysis"),
+        "sentiment_report":    ("💬", "Sentiment Analysis"),
+        "small_cap_report":    ("🏷️", "Small Cap / PSU Analysis"),
+    }
+    for key, (icon, title) in _SECTION.items():
+        body = _fmt(result.get(key))
+        if body:
+            lines += [f"## {icon} {title}", "", body, ""]
+
+    # Debate summary
+    debate = result.get("debate_summary", {})
+    judge  = _fmt(debate.get("judge_decision")) if debate else ""
+    if judge:
+        lines += ["## 🥊 Bull vs Bear Debate", ""]
+        lines += [f"**Judge's decision:**", "", judge, ""]
+
+    # Investment plan
+    plan = _fmt(result.get("investment_plan"))
+    if plan:
+        lines += ["## 📋 Investment Plan", "", plan, ""]
+
+    # Final trade decision (raw signal text if available)
+    raw_signal = _fmt(result.get("final_trade_decision"))
+    if raw_signal and raw_signal != verdict:
+        lines += ["## 🤖 Portfolio Manager Signal", "", raw_signal, ""]
+
+    # Verdict banner — always last
+    conf_str = f"  ·  Confidence: **{confidence}%**" if confidence else ""
+    lines += [
+        "---",
+        f"## {emoji} Final Verdict: **{verdict}**{conf_str}",
+    ]
+    if reason:
+        lines += ["", f"*{reason}*"]
+
+    return "\n".join(lines)
+
+
+def _get_price_snapshot_sync(symbol: str) -> str:
+    """Synchronous yfinance snapshot — called via asyncio.to_thread."""
+    try:
+        import yfinance as yf
+        t = yf.Ticker(symbol)
+        info = t.info or {}
+
+        price      = info.get("currentPrice") or info.get("regularMarketPrice")
+        prev_close = info.get("previousClose") or info.get("regularMarketPreviousClose")
+        day_high   = info.get("dayHigh") or info.get("regularMarketDayHigh")
+        day_low    = info.get("dayLow") or info.get("regularMarketDayLow")
+        volume     = info.get("volume") or info.get("regularMarketVolume")
+        avg_vol    = info.get("averageVolume")
+        week52_hi  = info.get("fiftyTwoWeekHigh")
+        week52_lo  = info.get("fiftyTwoWeekLow")
+        mktcap     = info.get("marketCap")
+        pe         = info.get("trailingPE") or info.get("forwardPE")
+        eps        = info.get("trailingEps")
+        book_val   = info.get("bookValue")
+        name       = info.get("longName") or info.get("shortName") or symbol
+
+        def fmt_price(v):
+            return f"₹{v:,.2f}" if v else "N/A"
+
+        def fmt_mktcap(v):
+            if v is None:
+                return "N/A"
+            if v >= 1e12:
+                return f"₹{v/1e12:.2f}L Cr"   # lakh crore
+            if v >= 1e9:
+                return f"₹{v/1e9:.1f}K Cr"    # thousand crore
+            if v >= 1e7:
+                return f"₹{v/1e7:.1f} Cr"
+            return f"₹{v:,.0f}"
+
+        def fmt_vol(v):
+            if v is None:
+                return "N/A"
+            if v >= 1e7:
+                return f"{v/1e7:.1f}Cr shares"
+            if v >= 1e5:
+                return f"{v/1e5:.1f}L shares"
+            return f"{v:,} shares"
+
+        chg = ""
+        if price and prev_close:
+            pct = (price - prev_close) / prev_close * 100
+            arrow = "▲" if pct >= 0 else "▼"
+            chg = f" ({arrow}{abs(pct):.2f}% today)"
+
+        vol_note = ""
+        if volume and avg_vol:
+            ratio = volume / avg_vol
+            if ratio > 1.5:
+                vol_note = f" — ⚠️ **{ratio:.1f}× avg** (unusual activity)"
+            elif ratio < 0.5:
+                vol_note = f" — 📉 {ratio:.1f}× avg (low activity)"
+
+        lines = [
+            f"## {name} ({symbol}) — Market Snapshot",
+            "",
+            f"**Price:** {fmt_price(price)}{chg}",
+            f"**Day Range:** {fmt_price(day_low)} – {fmt_price(day_high)}",
+            f"**52-Week Range:** {fmt_price(week52_lo)} – {fmt_price(week52_hi)}",
+            f"**Volume:** {fmt_vol(volume)}{vol_note}",
+            f"**Market Cap:** {fmt_mktcap(mktcap)}",
+            "",
+            "**Valuation**",
+            f"PE Ratio: {f'{pe:.1f}x' if pe else 'N/A'}  ·  "
+            f"EPS (TTM): {fmt_price(eps)}  ·  "
+            f"Book Value: {fmt_price(book_val)}",
+            "",
+            "*Call `analyze_stock` or `request_analysis` for the full AI-powered deep dive.*",
+        ]
+        return "\n".join(lines)
+
+    except Exception as exc:
+        return f"Could not fetch snapshot for {symbol}: {exc}"
+
+
 _ANALYST_LABELS = {
     "market":       "Technical analyst",
     "fundamentals": "Fundamental analyst",
@@ -714,6 +871,25 @@ _ANALYST_STAGE_DESCS = {
     "social":       "Sentiment analyst — reading social tone, FII/DII flows, retail investor sentiment",
     "news":         "News analyst — scanning NSE filings, SEBI alerts, corporate announcements",
 }
+
+
+@mcp.tool()
+async def get_price_snapshot(symbol: str) -> str:
+    """
+    Instantly fetch live market data for a stock — no AI, pure market data.
+
+    Returns current price, day range, 52-week range, volume (vs average),
+    market cap, PE ratio, EPS, and book value. Responds in under 5 seconds.
+
+    Use this FIRST before calling analyze_stock so the user gets immediate
+    price context while the full AI pipeline warms up.
+
+    Args:
+        symbol: NSE/BSE ticker (e.g. "RELIANCE", "TCS", "NIFTY"). .NS added automatically.
+    """
+    if not symbol.endswith((".NS", ".BO")):
+        symbol = symbol.upper() + ".NS"
+    return await asyncio.to_thread(_get_price_snapshot_sync, symbol)
 
 
 @mcp.tool()
@@ -743,8 +919,10 @@ async def analyze_stock(
                     Default: all four.
 
     Returns:
-        JSON string with full analysis including analyst reports, debate summary,
-        investment plan and final BUY / SELL / HOLD decision.
+        Markdown-formatted intelligence report: per-analyst findings, bull/bear
+        debate summary, investment plan, and final BUY / SELL / HOLD verdict.
+        Call get_price_snapshot first for an instant market data preview while
+        this longer analysis runs.
     """
     if not symbol.endswith((".NS", ".BO")):
         symbol = symbol.upper() + ".NS"
@@ -822,7 +1000,7 @@ async def analyze_stock(
         else:
             await emit(f"Analysis complete — Verdict: {decision}")
 
-        return json.dumps(result, indent=2, default=str)
+        return _format_analysis_report(result)
 
     except Exception as primary_exc:
         await _finish_updater()
@@ -846,7 +1024,7 @@ async def analyze_stock(
                 decision = result.get("decision", "UNKNOWN")
                 verdict = decision.get("decision", decision) if isinstance(decision, dict) else decision
                 await emit(f"Fallback analysis complete — Verdict: {verdict}")
-                return json.dumps(result, indent=2, default=str)
+                return _format_analysis_report(result)
 
             except Exception as fallback_exc:
                 logger.exception("Fallback provider %s also failed for %s", fallback_provider, symbol)
