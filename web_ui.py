@@ -314,25 +314,26 @@ st.markdown("""
     .bull-box li::before { content: "+" !important; color: var(--green) !important; font-weight: 700 !important; position: absolute !important; left: 0 !important; font-size: 14px !important; }
     .bear-box li::before { content: "−" !important; color: var(--red) !important;   font-weight: 700 !important; position: absolute !important; left: 0 !important; font-size: 14px !important; }
 
-    /* ── Signal boxes ── */
-    .signal-card { display: flex; gap: 10px; margin-bottom: 16px; }
+    /* ── Signal boxes — same card DNA as metric cards, accent via left border ── */
+    .signal-card { display: flex; gap: 12px; margin-bottom: 16px; }
     .signal-box {
-        flex: 1; border-radius: var(--radius); padding: 12px 14px;
-        border: 1px solid var(--border); background: var(--surface);
-        box-shadow: var(--shadow);
+        flex: 1; border-radius: 10px; padding: 14px 16px;
+        border: 1px solid #E8E3DB; background: #FDFCFA;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        border-left-width: 3px;
     }
-    .signal-box.buy  { background: var(--green-bg); border-color: var(--green-bd); }
-    .signal-box.hold { background: var(--accent-bg); border-color: var(--accent-bd); }
-    .signal-box.sell { background: var(--red-bg);   border-color: var(--red-bd);   }
+    .signal-box.buy  { border-left-color: #3B9E6D; }
+    .signal-box.hold { border-left-color: #D97757; }
+    .signal-box.sell { border-left-color: #C94040; }
     .signal-label {
-        font-size: 11px !important; color: var(--text-3) !important;
-        margin-bottom: 4px !important; text-transform: uppercase !important;
-        font-weight: 600 !important; letter-spacing: .05em !important;
+        font-size: 10px !important; color: #9B9590 !important;
+        margin-bottom: 8px !important; text-transform: uppercase !important;
+        font-weight: 700 !important; letter-spacing: .07em !important;
     }
-    .signal-value { font-size: 22px !important; font-weight: 600 !important; }
-    .signal-value.buy  { color: #1A6B46; }
-    .signal-value.hold { color: var(--accent-dk); }
-    .signal-value.sell { color: var(--red); }
+    .signal-value { font-size: 20px !important; font-weight: 700 !important; color: #1A1714 !important; letter-spacing: -0.5px !important; line-height: 1 !important; }
+    .signal-value.buy  { color: #3B9E6D !important; }
+    .signal-value.hold { color: #D97757 !important; }
+    .signal-value.sell { color: #C94040 !important; }
 
     /* ── Market ticker bar ── */
     .top-ticker-bar {
