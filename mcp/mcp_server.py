@@ -1220,11 +1220,23 @@ async def analyze_stock(
     cancelled = False
 
     async def _stage_updater():
+        # Announce each known stage (~20 s each — must stay under proxy idle timeout)
         for i, stage in enumerate(stages, 1):
             if cancelled:
                 return
             await emit(f"[{i}/{len(stages)}] {stage}…")
-            for _ in range(35):
+            for _ in range(20):
+                if cancelled:
+                    return
+                await asyncio.sleep(1)
+        # After stages are exhausted the pipeline may still be running (debate / PM).
+        # Keep sending heartbeats every 15 s so Railway's nginx never sees a silent SSE stream.
+        elapsed = len(stages) * 20
+        while not cancelled:
+            elapsed += 15
+            mins, secs = divmod(elapsed, 60)
+            await emit(f"⏳ Still analysing… ({mins}m {secs}s elapsed — wrapping up debate & verdict)")
+            for _ in range(15):
                 if cancelled:
                     return
                 await asyncio.sleep(1)
@@ -1313,7 +1325,7 @@ async def analyze_stock(
 
 
 @mcp.tool()
-async def get_technical_analysis(symbol: str) -> str:
+async def get_technical_analysis(symbol: str, ctx: Context = None) -> str:
     """
     STEP 2 — AI technical analyst. Call after get_price_snapshot.
 
@@ -1329,11 +1341,11 @@ async def get_technical_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker (e.g. "RELIANCE", "TCS"). .NS suffix added automatically.
     """
-    return await analyze_stock(symbol=symbol, analysts="market")
+    return await analyze_stock(symbol=symbol, analysts="market", ctx=ctx)
 
 
 @mcp.tool()
-async def get_fundamental_analysis(symbol: str) -> str:
+async def get_fundamental_analysis(symbol: str, ctx: Context = None) -> str:
     """
     STEP 3 — AI fundamental analyst. Call after get_technical_analysis.
 
@@ -1348,11 +1360,11 @@ async def get_fundamental_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker (e.g. "HDFCBANK", "WIPRO"). .NS suffix added automatically.
     """
-    return await analyze_stock(symbol=symbol, analysts="fundamentals")
+    return await analyze_stock(symbol=symbol, analysts="fundamentals", ctx=ctx)
 
 
 @mcp.tool()
-async def get_sentiment_analysis(symbol: str) -> str:
+async def get_sentiment_analysis(symbol: str, ctx: Context = None) -> str:
     """
     STEP 4 — AI news and sentiment analyst. Call after get_fundamental_analysis.
 
@@ -1367,11 +1379,12 @@ async def get_sentiment_analysis(symbol: str) -> str:
     Args:
         symbol: NSE ticker. .NS suffix added automatically.
     """
-    return await analyze_stock(symbol=symbol, analysts="social,news")
+    return await analyze_stock(symbol=symbol, analysts="social,news", ctx=ctx)
 
 
 @mcp.tool()
-async def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
+async def debate_trade(symbol: str, trade_date: Optional[str] = None,
+                       ctx: Context = None) -> str:
     """
     STEP 5 — Final step. Bull vs bear debate + Portfolio Manager verdict.
 
@@ -1389,7 +1402,7 @@ async def debate_trade(symbol: str, trade_date: Optional[str] = None) -> str:
         trade_date: YYYY-MM-DD. Defaults to today.
     """
     return await analyze_stock(symbol=symbol, trade_date=trade_date,
-                               analysts="market,fundamentals,social,news")
+                               analysts="market,fundamentals,social,news", ctx=ctx)
 
 
 @mcp.tool()
