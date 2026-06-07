@@ -1430,10 +1430,10 @@ if start_btn:
                 if "final_trade_decision" in chunk and chunk["final_trade_decision"]:
                      complete_step(progress_states, "Portfolio Manager", "9s")
                      progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
-                     
+
                      final_decision = chunk['final_trade_decision']
                      pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">62%</div></div>', unsafe_allow_html=True)
-                     
+
                      if "BUY" in final_decision.upper():
                          final_container.markdown(f'<div class="report-box bull-box"><h3>🟢 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
                      elif "SELL" in final_decision.upper():
@@ -1441,27 +1441,52 @@ if start_btn:
                      else:
                          final_container.markdown(f'<div class="report-box hold-box"><h3>🟡 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
 
-                     # Render compliance metadata
-                     st.markdown("<br>", unsafe_allow_html=True)
-                     st.markdown("### 📋 SEBI Compliance Audit Trail")
-                     
-                     session_val = graph.curr_state.get('session_id', 'N/A') if graph.curr_state else 'N/A'
-                     time_val = graph.curr_state.get('execution_timestamp', 'N/A') if graph.curr_state else 'N/A'
-                     
-                     col_a1, col_a2 = st.columns(2)
-                     col_a1.metric("Execution Session ID", f"{session_val[:8]}...", help=session_val)
-                     col_a2.metric("Compliance Timestamp", time_val)
-                     
-                     sources_dict = graph.curr_state.get('data_sources', {}) if graph.curr_state else {}
-                     if sources_dict:
-                         with st.expander("🔗 Data Source Attribution Details"):
-                             for tick, items in sources_dict.items():
-                                 st.markdown(f"**Ticker: {tick}**")
-                                 for item in items:
-                                     st.markdown(f"- **{item['method']}** via *{item['vendor']}* (Retrieved: {item['timestamp']})")
-                         
+        # --- SEBI COMPLIANCE AUDIT TRAIL (rendered once, after the stream ends) ---
         st.balloons()
         st.success("Analysis Complete!")
+
+        state = graph.curr_state or {}
+        session_val   = state.get('session_id', 'N/A')
+        time_val      = state.get('execution_timestamp', 'N/A')
+        sources_dict  = state.get('data_sources', {})
+
+        st.markdown(
+            '<div style="margin-top:28px;border-top:1px solid #E8E3DB;padding-top:20px;">'
+            '<div style="font-size:13px;font-weight:700;color:#1A1714;margin-bottom:14px;">📋 SEBI Compliance Audit Trail</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        _cs = "background:#FDFCFA;border:1px solid #E8E3DB;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.05);"
+        _lbl = "font-size:10px;color:#9B9590;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:6px;"
+        _val = "font-size:13px;font-weight:600;color:#1A1714;word-break:break-all;"
+
+        col_s, col_t, col_m = st.columns(3)
+        col_s.markdown(
+            f'<div style="{_cs}"><div style="{_lbl}">Session ID</div>'
+            f'<div style="{_val}" title="{session_val}">{session_val[:8]}...</div></div>',
+            unsafe_allow_html=True,
+        )
+        col_t.markdown(
+            f'<div style="{_cs}"><div style="{_lbl}">Compliance Timestamp</div>'
+            f'<div style="{_val}">{time_val}</div></div>',
+            unsafe_allow_html=True,
+        )
+        col_m.markdown(
+            f'<div style="{_cs}"><div style="{_lbl}">AI Model (Decision Engine)</div>'
+            f'<div style="{_val}">{provider} / {config.get("deep_think_llm","—")}</div></div>',
+            unsafe_allow_html=True,
+        )
+
+        if sources_dict:
+            st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+            with st.expander("Data Source Attribution", expanded=False):
+                for tick, items in sources_dict.items():
+                    st.markdown(f"**Ticker: {tick}**")
+                    for item in items:
+                        st.markdown(
+                            f"- `{item['method']}` via **{item['vendor']}** — {item['timestamp']}"
+                        )
     except Exception as e:
         err_msg = str(e)
         if any(k in err_msg.upper() or k in type(e).__name__.upper() for k in ["RESOURCE_EXHAUSTED", "QUOTA", "RATE_LIMIT", "429", "EXCEEDED"]):
