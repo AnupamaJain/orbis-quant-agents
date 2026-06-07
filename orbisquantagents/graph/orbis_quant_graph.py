@@ -140,6 +140,8 @@ class OrbisQuantAgentsGraph:
         self.ticker = None
         self.log_states_dict = {}  # date to full state dict
 
+        self.selected_analysts = selected_analysts
+
         # Set up the graph
         self.graph = self.graph_setup.setup_graph(selected_analysts)
 
@@ -210,57 +212,261 @@ class OrbisQuantAgentsGraph:
             ),
         }
 
+    # ------------------------------------------------------------------
+    # Per-analyst LLM helpers
+    # ------------------------------------------------------------------
+
+    _ANALYST_REPORT_FIELD = {
+        "market": "market_report",
+        "social": "sentiment_report",
+        "news": "news_report",
+        "fundamentals": "fundamentals_report",
+        "small_cap": "small_cap_report",
+    }
+
+    def _build_analyst_llm(self, analyst_type: str):
+        """Return an LLM for *analyst_type*, using per-analyst config when present."""
+        llm_map = self.config.get("analyst_llm_map", {})
+        if analyst_type not in llm_map:
+            return self.quick_thinking_llm
+
+        cfg = llm_map[analyst_type]
+        llm_kwargs = self._get_provider_kwargs()
+        if self.callbacks:
+            llm_kwargs["callbacks"] = self.callbacks
+
+        client = create_llm_client(
+            provider=cfg.get("provider", self.config["llm_provider"]),
+            model=cfg.get("model", self.config["quick_think_llm"]),
+            base_url=cfg.get("base_url", self.config.get("backend_url")),
+            **llm_kwargs,
+        )
+        return client.get_llm()
+
+    # ------------------------------------------------------------------
+    # Unified streaming entry-point (used by the web UI)
+    # ------------------------------------------------------------------
+
+    def stream_analysis(self, company_name: str, trade_date: str):
+        """Yield state-chunks as analysis progresses.
+
+        Routes to parallel or sequential mode based on config["parallel_analysts"].
+        Compatible with the same chunk-dict interface as graph.graph.stream().
+        """
+        self.ticker = company_name
+        session_id = generate_session_id()
+        execution_timestamp = get_execution_timestamp()
+
+        if self.config.get("parallel_analysts", False):
+            yield from self._stream_parallel(company_name, trade_date, session_id, execution_timestamp)
+        else:
+            yield from self._stream_sequential(company_name, trade_date, session_id, execution_timestamp)
+
+    def _stream_sequential(self, company_name, trade_date, session_id, execution_timestamp):
+        """Original single-graph streaming path."""
+        init_state = self.propagator.create_initial_state(company_name, trade_date)
+        init_state["session_id"] = session_id
+        init_state["execution_timestamp"] = execution_timestamp
+        init_state["data_sources"] = {}
+
+        args = self.propagator.get_graph_args()
+        captured = {}
+        token = data_sources_var.set({})
+        try:
+            final_state = None
+            for chunk in self.graph.stream(init_state, **args):
+                chunk["session_id"] = session_id
+                chunk["execution_timestamp"] = execution_timestamp
+                final_state = chunk
+                # Set curr_state as soon as the final decision arrives so the web UI
+                # can read session_id / execution_timestamp inside the loop.
+                if chunk.get("final_trade_decision"):
+                    captured = data_sources_var.get()
+                    chunk["data_sources"] = captured
+                    self.curr_state = chunk
+                yield chunk
+        finally:
+            captured = data_sources_var.get()
+            data_sources_var.reset(token)
+
+        if final_state:
+            final_state["data_sources"] = captured or {}
+            self.curr_state = final_state
+            self._log_state(trade_date, final_state)
+
+    def _stream_parallel(self, company_name, trade_date, session_id, execution_timestamp):
+        """Run all analysts concurrently, then stream the debate/PM phase."""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        all_reports: dict = {}
+        all_data_sources: dict = {}
+
+        def _run_analyst(analyst_type: str):
+            llm = self._build_analyst_llm(analyst_type)
+            mini_graph = self.graph_setup.setup_analyst_graph(analyst_type, llm)
+            init_state = self.propagator.create_initial_state(company_name, trade_date)
+            token = data_sources_var.set({})
+            try:
+                result = mini_graph.invoke(
+                    init_state,
+                    config={"recursion_limit": self.config.get("max_recur_limit", 100)},
+                )
+            finally:
+                captured = data_sources_var.get()
+                data_sources_var.reset(token)
+            return analyst_type, result, captured
+
+        with ThreadPoolExecutor(max_workers=len(self.selected_analysts)) as pool:
+            futures = {pool.submit(_run_analyst, a): a for a in self.selected_analysts}
+            for future in as_completed(futures):
+                analyst_type, state, captured = future.result()
+                field = self._ANALYST_REPORT_FIELD.get(analyst_type)
+                if field:
+                    all_reports[field] = state.get(field, "")
+                all_data_sources.update(captured)
+                # Yield immediately so the web UI renders each report as it arrives.
+                yield {
+                    **all_reports,
+                    "session_id": session_id,
+                    "execution_timestamp": execution_timestamp,
+                }
+
+        # Build initial state for debate phase with all analyst reports pre-filled.
+        debate_init = self.propagator.create_initial_state(company_name, trade_date)
+        debate_init.update(all_reports)
+        debate_init["session_id"] = session_id
+        debate_init["execution_timestamp"] = execution_timestamp
+        debate_init["data_sources"] = all_data_sources
+
+        debate_graph = self.graph_setup.setup_debate_graph()
+        token = data_sources_var.set(dict(all_data_sources))
+        try:
+            final_state = None
+            for chunk in debate_graph.stream(
+                debate_init,
+                stream_mode="values",
+                config={"recursion_limit": self.config.get("max_recur_limit", 100)},
+            ):
+                merged = {**all_reports, **chunk, "session_id": session_id, "execution_timestamp": execution_timestamp}
+                final_state = merged
+                # Set curr_state as soon as the final decision arrives so the web UI
+                # can read session_id / execution_timestamp inside the loop.
+                if merged.get("final_trade_decision"):
+                    merged["data_sources"] = all_data_sources
+                    self.curr_state = merged
+                yield merged
+        finally:
+            extra = data_sources_var.get()
+            data_sources_var.reset(token)
+            all_data_sources.update(extra)
+
+        if final_state:
+            final_state["data_sources"] = all_data_sources
+            self.curr_state = final_state
+            self._log_state(trade_date, final_state)
+
+    # ------------------------------------------------------------------
+    # MCP / batch propagation (unchanged interface)
+    # ------------------------------------------------------------------
+
     def propagate(self, company_name, trade_date):
         """Run the trading agents graph for a company on a specific date."""
 
         self.ticker = company_name
-
         session_id = generate_session_id()
         execution_timestamp = get_execution_timestamp()
 
-        # Initialize state
-        init_agent_state = self.propagator.create_initial_state(
-            company_name, trade_date
-        )
+        if self.config.get("parallel_analysts", False):
+            final_state = self._propagate_parallel(company_name, trade_date, session_id, execution_timestamp)
+        else:
+            final_state = self._propagate_sequential(company_name, trade_date, session_id, execution_timestamp)
+
+        self.curr_state = final_state
+        self._log_state(trade_date, final_state)
+        return final_state, self.process_signal(final_state["final_trade_decision"])
+
+    def _propagate_sequential(self, company_name, trade_date, session_id, execution_timestamp):
+        """Original single-graph invoke path."""
+        init_agent_state = self.propagator.create_initial_state(company_name, trade_date)
         init_agent_state["session_id"] = session_id
         init_agent_state["execution_timestamp"] = execution_timestamp
         init_agent_state["data_sources"] = {}
 
         args = self.propagator.get_graph_args()
-
         token = data_sources_var.set({})
         try:
             if self.debug:
-                # Debug mode with tracing
                 trace = []
                 for chunk in self.graph.stream(init_agent_state, **args):
-                    if len(chunk["messages"]) == 0:
-                        pass
-                    else:
+                    if chunk.get("messages"):
                         chunk["messages"][-1].pretty_print()
                         trace.append(chunk)
-
                 final_state = trace[-1]
             else:
-                # Standard mode without tracing
                 final_state = self.graph.invoke(init_agent_state, **args)
         finally:
             captured_sources = data_sources_var.get()
             data_sources_var.reset(token)
 
-        # Store compliance metadata in final state
         final_state["session_id"] = session_id
         final_state["execution_timestamp"] = execution_timestamp
         final_state["data_sources"] = captured_sources or {}
+        return final_state
 
-        # Store current state for reflection
-        self.curr_state = final_state
+    def _propagate_parallel(self, company_name, trade_date, session_id, execution_timestamp):
+        """Run all analysts in parallel, then invoke debate/PM."""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        # Log state
-        self._log_state(trade_date, final_state)
+        all_reports: dict = {}
+        all_data_sources: dict = {}
 
-        # Return decision and processed signal
-        return final_state, self.process_signal(final_state["final_trade_decision"])
+        def _run_analyst(analyst_type: str):
+            llm = self._build_analyst_llm(analyst_type)
+            mini_graph = self.graph_setup.setup_analyst_graph(analyst_type, llm)
+            init_state = self.propagator.create_initial_state(company_name, trade_date)
+            token = data_sources_var.set({})
+            try:
+                result = mini_graph.invoke(
+                    init_state,
+                    config={"recursion_limit": self.config.get("max_recur_limit", 100)},
+                )
+            finally:
+                captured = data_sources_var.get()
+                data_sources_var.reset(token)
+            return analyst_type, result, captured
+
+        with ThreadPoolExecutor(max_workers=len(self.selected_analysts)) as pool:
+            futures = {pool.submit(_run_analyst, a): a for a in self.selected_analysts}
+            for future in as_completed(futures):
+                analyst_type, state, captured = future.result()
+                field = self._ANALYST_REPORT_FIELD.get(analyst_type)
+                if field:
+                    all_reports[field] = state.get(field, "")
+                all_data_sources.update(captured)
+
+        debate_init = self.propagator.create_initial_state(company_name, trade_date)
+        debate_init.update(all_reports)
+        debate_init["session_id"] = session_id
+        debate_init["execution_timestamp"] = execution_timestamp
+        debate_init["data_sources"] = all_data_sources
+
+        debate_graph = self.graph_setup.setup_debate_graph()
+        token = data_sources_var.set(dict(all_data_sources))
+        try:
+            final_state = debate_graph.invoke(
+                debate_init,
+                config={"recursion_limit": self.config.get("max_recur_limit", 100)},
+            )
+        finally:
+            extra = data_sources_var.get()
+            data_sources_var.reset(token)
+            all_data_sources.update(extra)
+
+        final_state.update(all_reports)
+        final_state["session_id"] = session_id
+        final_state["execution_timestamp"] = execution_timestamp
+        final_state["data_sources"] = all_data_sources
+        return final_state
 
     def _log_state(self, trade_date, final_state):
         """Log the final state to a JSON file and cryptographic audit trail."""

@@ -207,3 +207,94 @@ class GraphSetup:
 
         # Compile and return
         return workflow.compile()
+
+    # ------------------------------------------------------------------
+    # Parallel-mode helpers
+    # ------------------------------------------------------------------
+
+    def setup_analyst_graph(self, analyst_type: str, llm=None):
+        """Compile a mini-graph that runs a single analyst and exits at END.
+
+        Used by parallel mode: each analyst runs in its own isolated graph so
+        their tool-call message lists never interfere with one another.
+        """
+        analyst_llm = llm or self.quick_thinking_llm
+
+        create_fns = {
+            "market": create_market_analyst,
+            "social": create_social_media_analyst,
+            "news": create_news_analyst,
+            "fundamentals": create_fundamentals_analyst,
+            "small_cap": create_small_cap_analyst,
+        }
+        create_fn = create_fns.get(analyst_type)
+        if create_fn is None:
+            raise ValueError(f"Unknown analyst type: {analyst_type!r}")
+
+        node_name = f"{analyst_type.capitalize()} Analyst"
+        clear_name = f"Msg Clear {analyst_type.capitalize()}"
+        tools_name = f"tools_{analyst_type}"
+
+        workflow = StateGraph(AgentState)
+        workflow.add_node(node_name, create_fn(analyst_llm))
+        workflow.add_node(clear_name, create_msg_delete())
+        workflow.add_node(tools_name, self.tool_nodes[analyst_type])
+
+        workflow.add_edge(START, node_name)
+        workflow.add_conditional_edges(
+            node_name,
+            getattr(self.conditional_logic, f"should_continue_{analyst_type}"),
+            [tools_name, clear_name],
+        )
+        workflow.add_edge(tools_name, node_name)
+        workflow.add_edge(clear_name, END)
+
+        return workflow.compile()
+
+    def setup_debate_graph(self):
+        """Compile the debate+PM graph (Bull → Bear → Research Mgr → Trader → Risk → PM).
+
+        Used by parallel mode after all analyst reports are already in state.
+        """
+        workflow = StateGraph(AgentState)
+
+        workflow.add_node("Bull Researcher", create_bull_researcher(self.quick_thinking_llm, self.bull_memory))
+        workflow.add_node("Bear Researcher", create_bear_researcher(self.quick_thinking_llm, self.bear_memory))
+        workflow.add_node("Research Manager", create_research_manager(self.deep_thinking_llm, self.invest_judge_memory))
+        workflow.add_node("Trader", create_trader(self.quick_thinking_llm, self.trader_memory))
+        workflow.add_node("Aggressive Analyst", create_aggressive_debator(self.quick_thinking_llm))
+        workflow.add_node("Neutral Analyst", create_neutral_debator(self.quick_thinking_llm))
+        workflow.add_node("Conservative Analyst", create_conservative_debator(self.quick_thinking_llm))
+        workflow.add_node("Portfolio Manager", create_portfolio_manager(self.deep_thinking_llm, self.portfolio_manager_memory))
+
+        workflow.add_edge(START, "Bull Researcher")
+        workflow.add_conditional_edges(
+            "Bull Researcher",
+            self.conditional_logic.should_continue_debate,
+            {"Bear Researcher": "Bear Researcher", "Research Manager": "Research Manager"},
+        )
+        workflow.add_conditional_edges(
+            "Bear Researcher",
+            self.conditional_logic.should_continue_debate,
+            {"Bull Researcher": "Bull Researcher", "Research Manager": "Research Manager"},
+        )
+        workflow.add_edge("Research Manager", "Trader")
+        workflow.add_edge("Trader", "Aggressive Analyst")
+        workflow.add_conditional_edges(
+            "Aggressive Analyst",
+            self.conditional_logic.should_continue_risk_analysis,
+            {"Conservative Analyst": "Conservative Analyst", "Portfolio Manager": "Portfolio Manager"},
+        )
+        workflow.add_conditional_edges(
+            "Conservative Analyst",
+            self.conditional_logic.should_continue_risk_analysis,
+            {"Neutral Analyst": "Neutral Analyst", "Portfolio Manager": "Portfolio Manager"},
+        )
+        workflow.add_conditional_edges(
+            "Neutral Analyst",
+            self.conditional_logic.should_continue_risk_analysis,
+            {"Aggressive Analyst": "Aggressive Analyst", "Portfolio Manager": "Portfolio Manager"},
+        )
+        workflow.add_edge("Portfolio Manager", END)
+
+        return workflow.compile()

@@ -35,4 +35,11 @@ DEFAULT_CONFIG = {
     "tool_vendors": {
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
     },
+    # Parallel analyst execution (runs all analysts concurrently to reduce total time)
+    "parallel_analysts": False,
+    # Per-analyst LLM override — distribute load across models/providers to avoid rate limits.
+    # Format: {"market": {"provider": "ollama", "model": "qwen2.5:3b", "base_url": "..."}, ...}
+    # Supported analyst keys: "market", "social", "news", "fundamentals", "small_cap"
+    # Omitting a key falls back to the global quick_think_llm.
+    "analyst_llm_map": {},
 }
