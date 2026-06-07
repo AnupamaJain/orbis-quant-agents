@@ -797,11 +797,12 @@ def _format_analysis_report(result: dict) -> str:
 
 
 def _get_price_snapshot_sync(symbol: str) -> str:
-    """Synchronous yfinance snapshot — called via asyncio.to_thread."""
+    """Synchronous yfinance snapshot with RSI + MACD — called via asyncio.to_thread."""
     try:
         import yfinance as yf
         t = yf.Ticker(symbol)
         info = t.info or {}
+        hist = t.history(period="6mo")
 
         price      = info.get("currentPrice") or info.get("regularMarketPrice")
         prev_close = info.get("previousClose") or info.get("regularMarketPreviousClose")
@@ -821,23 +822,16 @@ def _get_price_snapshot_sync(symbol: str) -> str:
             return f"₹{v:,.2f}" if v else "N/A"
 
         def fmt_mktcap(v):
-            if v is None:
-                return "N/A"
-            if v >= 1e12:
-                return f"₹{v/1e12:.2f}L Cr"   # lakh crore
-            if v >= 1e9:
-                return f"₹{v/1e9:.1f}K Cr"    # thousand crore
-            if v >= 1e7:
-                return f"₹{v/1e7:.1f} Cr"
+            if v is None: return "N/A"
+            if v >= 1e12: return f"₹{v/1e12:.2f}L Cr"
+            if v >= 1e9:  return f"₹{v/1e9:.1f}K Cr"
+            if v >= 1e7:  return f"₹{v/1e7:.1f} Cr"
             return f"₹{v:,.0f}"
 
         def fmt_vol(v):
-            if v is None:
-                return "N/A"
-            if v >= 1e7:
-                return f"{v/1e7:.1f}Cr shares"
-            if v >= 1e5:
-                return f"{v/1e5:.1f}L shares"
+            if v is None: return "N/A"
+            if v >= 1e7:  return f"{v/1e7:.1f}Cr shares"
+            if v >= 1e5:  return f"{v/1e5:.1f}L shares"
             return f"{v:,} shares"
 
         chg = ""
@@ -850,12 +844,53 @@ def _get_price_snapshot_sync(symbol: str) -> str:
         if volume and avg_vol:
             ratio = volume / avg_vol
             if ratio > 1.5:
-                vol_note = f" — ⚠️ **{ratio:.1f}× avg** (unusual activity)"
+                vol_note = f" — ⚠️ {ratio:.1f}× avg (unusual activity)"
             elif ratio < 0.5:
-                vol_note = f" — 📉 {ratio:.1f}× avg (low activity)"
+                vol_note = f" — 📉 {ratio:.1f}× avg (quiet)"
+
+        # ── RSI(14) ────────────────────────────────────────────────────────────
+        rsi_str = "N/A"
+        rsi_note = ""
+        if hist is not None and len(hist) >= 15:
+            delta = hist["Close"].diff()
+            gain = delta.clip(lower=0).ewm(com=13, adjust=False).mean()
+            loss = (-delta.clip(upper=0)).ewm(com=13, adjust=False).mean()
+            rs = gain / loss.replace(0, float("nan"))
+            rsi_val = (100 - 100 / (1 + rs)).iloc[-1]
+            rsi_str = f"{rsi_val:.1f}"
+            if rsi_val >= 70:   rsi_note = "🔴 Overbought"
+            elif rsi_val <= 30: rsi_note = "🟢 Oversold — potential bounce"
+            elif rsi_val >= 55: rsi_note = "📈 Bullish momentum"
+            else:               rsi_note = "📉 Weak / bearish momentum"
+
+        # ── MACD(12,26,9) ──────────────────────────────────────────────────────
+        macd_str = "N/A"
+        if hist is not None and len(hist) >= 27:
+            ema12  = hist["Close"].ewm(span=12, adjust=False).mean()
+            ema26  = hist["Close"].ewm(span=26, adjust=False).mean()
+            macd   = ema12 - ema26
+            signal = macd.ewm(span=9, adjust=False).mean()
+            m, s   = macd.iloc[-1], signal.iloc[-1]
+            prev_m, prev_s = macd.iloc[-2], signal.iloc[-2]
+            cross = ""
+            if prev_m < prev_s and m >= s: cross = " 🟢 Bullish crossover!"
+            elif prev_m > prev_s and m <= s: cross = " 🔴 Bearish crossover!"
+            macd_str = f"{m:+.2f} / Signal {s:+.2f}{cross}"
+
+        # ── SMA trend ─────────────────────────────────────────────────────────
+        trend_str = ""
+        if hist is not None and len(hist) >= 50 and price:
+            sma50  = hist["Close"].rolling(50).mean().iloc[-1]
+            above50 = price > sma50
+            trend_str = f"Above 50 DMA (₹{sma50:.0f}) — bullish" if above50 \
+                        else f"Below 50 DMA (₹{sma50:.0f}) — bearish"
+            if len(hist) >= 200:
+                sma200 = hist["Close"].rolling(200).mean().iloc[-1]
+                above200 = price > sma200
+                trend_str += f"  ·  {'Above' if above200 else 'Below'} 200 DMA (₹{sma200:.0f})"
 
         lines = [
-            f"## {name} ({symbol}) — Market Snapshot",
+            f"## {name} ({symbol}) — Live Snapshot",
             "",
             f"**Price:** {fmt_price(price)}{chg}",
             f"**Day Range:** {fmt_price(day_low)} – {fmt_price(day_high)}",
@@ -863,12 +898,18 @@ def _get_price_snapshot_sync(symbol: str) -> str:
             f"**Volume:** {fmt_vol(volume)}{vol_note}",
             f"**Market Cap:** {fmt_mktcap(mktcap)}",
             "",
-            "**Valuation**",
-            f"PE Ratio: {f'{pe:.1f}x' if pe else 'N/A'}  ·  "
-            f"EPS (TTM): {fmt_price(eps)}  ·  "
-            f"Book Value: {fmt_price(book_val)}",
+            "**Quick Technicals** *(no AI — raw data)*",
+            f"RSI(14): **{rsi_str}** — {rsi_note}",
+            f"MACD: {macd_str}",
+        ]
+        if trend_str:
+            lines.append(f"Trend: {trend_str}")
+        lines += [
             "",
-            "*Call `analyze_stock` or `request_analysis` for the full AI-powered deep dive.*",
+            "**Valuation**",
+            f"PE: {f'{pe:.1f}x' if pe else 'N/A'}  ·  EPS: {fmt_price(eps)}  ·  Book Value: {fmt_price(book_val)}",
+            "",
+            "*Now calling AI technical analyst for deeper interpretation...*",
         ]
         return "\n".join(lines)
 
