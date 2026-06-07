@@ -21,6 +21,7 @@ Register in Claude Code (.claude/settings.json):
 """
 
 import sys
+import warnings
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import asyncio
@@ -36,7 +37,29 @@ from starlette.datastructures import Headers, QueryParams
 from starlette.requests import Request
 from starlette.responses import JSONResponse, HTMLResponse
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
+
+# ── Logging configuration ─────────────────────────────────────────────────────
+# Keep our own logger at INFO; silence noisy third-party libraries that would
+# otherwise flood Railway's 500 log/s limit with per-request HTTP traces and
+# repeated pandas deprecation warnings.
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger("orbis-quant-mcp").setLevel(logging.INFO)
+
+# httpx / httpcore log one line per LLM HTTP call — at INFO that's hundreds of
+# lines per analysis run.  WARNING keeps connection errors visible.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+# Uvicorn access log prints every POST /mcp — useful locally, too noisy in prod.
+logging.getLogger("uvicorn.access").setLevel(
+    logging.WARNING if os.getenv("RAILWAY_ENVIRONMENT") else logging.INFO
+)
+
+# Suppress the pandas Timestamp.utcnow deprecation warning that fires on every
+# data fetch call.
+warnings.filterwarnings("ignore", message=".*utcnow.*deprecated.*", category=FutureWarning)
+warnings.filterwarnings("ignore", message=".*Timestamp.utcnow.*", category=FutureWarning)
 
 logger = logging.getLogger("orbis-quant-mcp")
 
@@ -653,13 +676,44 @@ def _run_pipeline(symbol: str, trade_date: str, analyst_list: list[str],
     """Synchronous helper — runs the blocking graph pipeline."""
     graph = _get_graph(analyst_list, provider_override=provider_override)
     final_state, decision = graph.propagate(symbol, trade_date)
-    return {
+    result = {
         "symbol":     symbol,
         "trade_date": trade_date,
         "analysts":   analyst_list,
         "decision":   decision,
         "status":     "success",
     }
+    # Attach analyst reports if the graph produced them
+    for key in ("market_report", "fundamentals_report", "sentiment_report",
+                "news_report", "small_cap_report", "investment_plan",
+                "final_trade_decision"):
+        val = final_state.get(key)
+        if val:
+            result[key] = val
+    # Attach debate summary (judge decisions only — histories can be huge)
+    debate = final_state.get("investment_debate_state", {})
+    if debate:
+        result["debate_summary"] = {
+            "judge_decision": debate.get("judge_decision", ""),
+            "bull_rounds":    len(debate.get("bull_history", [])),
+            "bear_rounds":    len(debate.get("bear_history", [])),
+        }
+    return result
+
+
+_ANALYST_LABELS = {
+    "market":       "Technical analyst",
+    "fundamentals": "Fundamental analyst",
+    "social":       "Sentiment analyst",
+    "news":         "News analyst",
+}
+
+_ANALYST_STAGE_DESCS = {
+    "market":       "Technical analyst — scanning price action, RSI, MACD, Camarilla pivot levels",
+    "fundamentals": "Fundamental analyst — reviewing PE ratio, EPS growth, promoter holding, debt ratios",
+    "social":       "Sentiment analyst — reading social tone, FII/DII flows, retail investor sentiment",
+    "news":         "News analyst — scanning NSE filings, SEBI alerts, corporate announcements",
+}
 
 
 @mcp.tool()
@@ -667,6 +721,7 @@ async def analyze_stock(
     symbol: str,
     trade_date: Optional[str] = None,
     analysts: Optional[str] = "market,social,news,fundamentals",
+    ctx: Context = None,
 ) -> str:
     """
     Run the full Orbis multi-agent analysis pipeline on a stock.
@@ -688,7 +743,8 @@ async def analyze_stock(
                     Default: all four.
 
     Returns:
-        JSON string with full analysis including final decision and confidence score.
+        JSON string with full analysis including analyst reports, debate summary,
+        investment plan and final BUY / SELL / HOLD decision.
     """
     if not symbol.endswith((".NS", ".BO")):
         symbol = symbol.upper() + ".NS"
@@ -700,18 +756,79 @@ async def analyze_stock(
 
     primary_provider = os.getenv("LLM_PROVIDER", "openai")
     fallback_provider = os.getenv("FALLBACK_LLM_PROVIDER")
+    model = os.getenv("DEEP_THINK_LLM", "unknown")
+    team_str = "  ·  ".join(_ANALYST_LABELS.get(a, a.title()) for a in analyst_list)
+    n_agents = len(analyst_list) + 3  # analysts + bull + bear + PM
+
+    # Build per-stage progress messages
+    stages = [_ANALYST_STAGE_DESCS[a] for a in analyst_list if a in _ANALYST_STAGE_DESCS]
+    stages += [
+        "Bull researcher — building the bullish thesis with supporting evidence",
+        "Bear researcher — identifying risks and counter-arguments",
+        "Portfolio Manager — weighing evidence, issuing final BUY / SELL / HOLD verdict",
+    ]
+
+    async def emit(msg: str):
+        if ctx:
+            try:
+                await ctx.info(msg)
+            except Exception:
+                pass
+        else:
+            logger.info(msg)
+
+    # Opening banner
+    await emit(f"Orbis Quant Intelligence — {symbol}")
+    await emit(f"Date: {trade_date}  |  {n_agents} agents  |  {model} via {primary_provider}")
+    await emit(f"Analyst team: {team_str}")
+    await emit("Pipeline started — each agent runs in sequence, building on the previous")
+
+    # Background updater sends one stage message every ~35 s while the thread runs
+    stop_event = asyncio.Event()
+
+    async def _stage_updater():
+        for i, stage in enumerate(stages, 1):
+            if stop_event.is_set():
+                break
+            await emit(f"[{i}/{len(stages)}] {stage}…")
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=35)
+                break  # pipeline finished early
+            except asyncio.TimeoutError:
+                pass  # move to next stage label
+
+    updater_task = asyncio.create_task(_stage_updater())
+
+    async def _finish_updater():
+        stop_event.set()
+        await asyncio.gather(updater_task, return_exceptions=True)
 
     try:
-        # Run the blocking graph pipeline in a thread so the async event loop
-        # stays free for SSE heartbeats and other concurrent requests.
         result = await asyncio.to_thread(_run_pipeline, symbol, trade_date, analyst_list)
+        await _finish_updater()
+
+        decision = result.get("decision", "UNKNOWN")
+        if isinstance(decision, dict):
+            verdict = decision.get("decision", "UNKNOWN")
+            confidence = decision.get("confidence")
+            conf_str = f"  (confidence: {confidence}%)" if confidence else ""
+            await emit(f"Analysis complete — Verdict: {verdict}{conf_str}")
+        else:
+            await emit(f"Analysis complete — Verdict: {decision}")
+
         return json.dumps(result, indent=2, default=str)
 
     except Exception as primary_exc:
+        await _finish_updater()
+
         if fallback_provider and fallback_provider != primary_provider and _is_provider_limit_error(primary_exc):
             logger.warning(
                 "Primary provider %s failed for %s (%s) — retrying with fallback %s",
                 primary_provider, symbol, type(primary_exc).__name__, fallback_provider,
+            )
+            await emit(
+                f"Primary provider ({primary_provider}) returned a quota/overload error — "
+                f"switching to fallback ({fallback_provider}) and retrying…"
             )
             try:
                 result = await asyncio.to_thread(
@@ -719,24 +836,30 @@ async def analyze_stock(
                 )
                 result["provider_used"] = fallback_provider
                 result["primary_error"] = str(primary_exc)[:200]
+
+                decision = result.get("decision", "UNKNOWN")
+                verdict = decision.get("decision", decision) if isinstance(decision, dict) else decision
+                await emit(f"Fallback analysis complete — Verdict: {verdict}")
                 return json.dumps(result, indent=2, default=str)
+
             except Exception as fallback_exc:
                 logger.exception("Fallback provider %s also failed for %s", fallback_provider, symbol)
+                await emit(f"Fallback provider ({fallback_provider}) also failed — returning error details")
                 return json.dumps({
-                    "symbol":          symbol,
-                    "status":          "error",
-                    "message":         str(fallback_exc),
-                    "primary_error":   str(primary_exc)[:200],
-                    "provider":        fallback_provider,
+                    "symbol":           symbol,
+                    "status":           "error",
+                    "message":          str(fallback_exc),
+                    "primary_error":    str(primary_exc)[:200],
+                    "provider":         fallback_provider,
                     "primary_provider": primary_provider,
                     "hint": (
-                        f"Both {primary_provider.upper()} and fallback {fallback_provider.upper()} failed. "
+                        f"Both {primary_provider.upper()} and {fallback_provider.upper()} failed. "
                         "Check API keys and quota."
                     ),
                 })
 
         logger.exception("analyze_stock failed for %s", symbol)
-        model = os.getenv("DEEP_THINK_LLM", "unknown")
+        await emit(f"Analysis failed — {type(primary_exc).__name__}: {str(primary_exc)[:120]}")
         return json.dumps({
             "symbol":   symbol,
             "status":   "error",
@@ -746,7 +869,8 @@ async def analyze_stock(
             "hint":     (
                 f"Check that the {primary_provider.upper()} API key is set and valid. "
                 f"Current provider={primary_provider}, model={model}. "
-                + (f"Set FALLBACK_LLM_PROVIDER env var to enable automatic failover." if not fallback_provider else "")
+                + ("Set FALLBACK_LLM_PROVIDER env var to enable automatic failover."
+                   if not fallback_provider else "")
             ),
         })
 
