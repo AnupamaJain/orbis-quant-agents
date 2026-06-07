@@ -34,7 +34,7 @@ from uuid import UUID
 import time
 from starlette.datastructures import Headers, QueryParams
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, HTMLResponse
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
@@ -307,6 +307,243 @@ async def health_check(request: Request) -> JSONResponse:
         "provider": provider,
         "port":     _PORT,
     })
+
+
+_CONNECT_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect — Orbis Quant Agents</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       background:#0a0f1e;color:#e2e8f0;min-height:100vh;padding:40px 20px}
+  .wrap{max-width:680px;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:12px;margin-bottom:48px}
+  .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+             border-radius:10px;display:flex;align-items:center;justify-content:center;
+             font-size:20px}
+  .logo-name{font-size:18px;font-weight:700;letter-spacing:-0.3px}
+  .logo-tag{font-size:11px;color:#6366f1;font-weight:600;letter-spacing:0.05em;
+            text-transform:uppercase;margin-top:1px}
+  h1{font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-0.5px;margin-bottom:8px}
+  .subtitle{color:#94a3b8;font-size:15px;margin-bottom:40px;line-height:1.5}
+  .card{background:#111827;border:1px solid #1f2937;border-radius:14px;
+        padding:28px;margin-bottom:20px}
+  .card-title{font-size:13px;font-weight:600;color:#6366f1;letter-spacing:0.06em;
+              text-transform:uppercase;margin-bottom:20px;display:flex;
+              align-items:center;gap:8px}
+  .step{display:flex;gap:16px;margin-bottom:18px;align-items:flex-start}
+  .step:last-child{margin-bottom:0}
+  .step-num{min-width:26px;height:26px;background:#1e1b4b;border:1px solid #4338ca;
+            border-radius:50%;display:flex;align-items:center;justify-content:center;
+            font-size:12px;font-weight:700;color:#818cf8;flex-shrink:0;margin-top:1px}
+  .step-text{font-size:14px;color:#cbd5e1;line-height:1.55}
+  .step-text strong{color:#e2e8f0;font-weight:600}
+  .step-text code{background:#1f2937;border:1px solid #374151;border-radius:5px;
+                  padding:1px 6px;font-size:13px;color:#a5b4fc;font-family:monospace}
+  .key-row{display:flex;gap:10px;margin:20px 0 6px}
+  .key-input{flex:1;background:#0f172a;border:1px solid #374151;border-radius:8px;
+             padding:10px 14px;color:#e2e8f0;font-size:14px;font-family:monospace;
+             outline:none;transition:border-color .2s}
+  .key-input:focus{border-color:#6366f1}
+  .key-input::placeholder{color:#4b5563}
+  .url-box{background:#0f172a;border:1px solid #374151;border-radius:8px;
+           padding:14px;position:relative;margin-bottom:6px}
+  .url-text{font-family:monospace;font-size:13px;color:#a5b4fc;word-break:break-all;
+            line-height:1.5;padding-right:70px}
+  .copy-btn{position:absolute;top:10px;right:10px;background:#4338ca;border:none;
+            color:#e0e7ff;font-size:12px;font-weight:600;padding:5px 12px;
+            border-radius:6px;cursor:pointer;transition:background .15s}
+  .copy-btn:hover{background:#4f46e5}
+  .copy-btn.copied{background:#065f46;color:#6ee7b7}
+  .hint{font-size:12px;color:#4b5563;margin-bottom:0}
+  .prompt-box{background:#0f172a;border:1px solid #1f2937;border-radius:8px;
+              padding:14px 16px;font-size:14px;color:#94a3b8;line-height:1.5;
+              font-style:italic;position:relative;margin-top:12px}
+  .prompt-box::before{content:'"';font-size:20px;color:#4338ca;
+                       position:absolute;top:8px;left:10px;font-style:normal}
+  .prompt-text{padding-left:16px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px}
+  .tab{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:500;
+       cursor:pointer;border:1px solid transparent;color:#64748b;transition:all .15s}
+  .tab.active{background:#1e1b4b;border-color:#4338ca;color:#a5b4fc}
+  .tab:hover:not(.active){color:#94a3b8}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+  .footer{text-align:center;margin-top:48px;color:#374151;font-size:13px}
+  .badge{display:inline-block;background:#1e1b4b;border:1px solid #312e81;
+         color:#818cf8;font-size:11px;font-weight:600;padding:3px 8px;
+         border-radius:20px;letter-spacing:0.04em;text-transform:uppercase;margin-left:8px}
+  .platform-icon{font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-name">Orbis Quant Agents</div>
+      <div class="logo-tag">NSE · BSE · AI-Powered</div>
+    </div>
+  </div>
+
+  <h1>Connect to your AI trading analyst</h1>
+  <p class="subtitle">Multi-agent analysis for Indian markets — technical, fundamental, sentiment &amp; debate.<br>
+  Works inside Claude.ai, Claude Desktop, and the Claude CLI.</p>
+
+  <!-- Step 0: Enter API key -->
+  <div class="card">
+    <div class="card-title">🔑 Your MCP URL</div>
+    <div class="step-text" style="margin-bottom:14px;color:#94a3b8;font-size:14px">
+      Enter the API key you received, then copy the personalised URL below.
+    </div>
+    <div class="key-row">
+      <input class="key-input" id="apiKey" type="text" placeholder="Paste your API key here…"
+             oninput="updateUrl()">
+    </div>
+    <div class="url-box">
+      <div class="url-text" id="mcpUrl">https://RAILWAY_HOST/mcp?api_key=<span style="color:#f59e0b">YOUR_KEY</span></div>
+      <button class="copy-btn" id="copyBtn" onclick="copyUrl()">Copy</button>
+    </div>
+    <p class="hint">Share your key only with people you trust — it grants access to your Ollama instance.</p>
+  </div>
+
+  <!-- Platform tabs -->
+  <div class="card">
+    <div class="card-title">📡 Connection steps</div>
+    <div class="tabs">
+      <div class="tab active platform-icon" onclick="switchTab('web')">🌐 Claude.ai</div>
+      <div class="tab platform-icon" onclick="switchTab('desktop')">🖥 Desktop</div>
+      <div class="tab platform-icon" onclick="switchTab('cli')">⌨ CLI</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-web">
+      <div class="step"><div class="step-num">1</div><div class="step-text">
+        Open <strong>claude.ai</strong> and go to <strong>Settings → Connectors → Customize</strong></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">
+        Click the <code>+</code> icon next to the search bar, then <strong>Add Custom Connector</strong></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">
+        Set the name to <code>Orbis Quant Agents</code> and paste your MCP URL from above</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">
+        Click <strong>Connect</strong> — tools will appear in your next conversation</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-desktop">
+      <div class="step"><div class="step-num">1</div><div class="step-text">
+        Open <strong>~/Library/Application Support/Claude/claude_desktop_config.json</strong></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">
+        Add the block below inside <code>"mcpServers"</code>:
+        <div class="url-box" style="margin-top:10px;padding-right:14px">
+          <div class="url-text" style="font-size:12px;padding-right:0" id="desktopSnippet">
+            "orbis-quant": {<br>
+            &nbsp;&nbsp;"command": "npx",<br>
+            &nbsp;&nbsp;"args": ["-y","mcp-remote@latest",<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"https://RAILWAY_HOST/mcp?api_key=YOUR_KEY"]<br>
+            }
+          </div>
+        </div>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">
+        Save the file and <strong>restart Claude Desktop</strong></div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-cli">
+      <div class="step"><div class="step-num">1</div><div class="step-text">
+        Run in your terminal:
+        <div class="url-box" style="margin-top:10px;padding-right:14px">
+          <div class="url-text" style="padding-right:0" id="cliSnippet">
+            claude mcp add orbis-quant \\<br>
+            &nbsp;&nbsp;--transport http \\<br>
+            &nbsp;&nbsp;https://RAILWAY_HOST/mcp?api_key=YOUR_KEY
+          </div>
+        </div>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">
+        Verify with <code>claude mcp list</code> — you should see <strong>orbis-quant</strong></div></div>
+    </div>
+  </div>
+
+  <!-- Test prompts -->
+  <div class="card">
+    <div class="card-title">🧪 Test your connection</div>
+    <div class="step-text" style="margin-bottom:4px;color:#94a3b8">
+      Once connected, try one of these prompts in Claude:
+    </div>
+    <div class="prompt-box"><div class="prompt-text">
+      Analyze RELIANCE.NS using Orbis Quant — give me the full intelligence report
+    </div></div>
+    <div class="prompt-box" style="margin-top:8px"><div class="prompt-text">
+      Give me a pre-market setup for TCS and INFY
+    </div></div>
+    <div class="prompt-box" style="margin-top:8px"><div class="prompt-text">
+      Screen my watchlist: RELIANCE, HDFC, ICICIBANK, SBIN, WIPRO
+    </div></div>
+  </div>
+
+  <div class="footer">
+    Orbis Quant Agents &nbsp;·&nbsp; Powered by <strong>qwen3</strong> via Ollama &nbsp;·&nbsp;
+    <span style="color:#4b5563">Free · Private · Local AI</span>
+  </div>
+
+</div>
+<script>
+const HOST = location.host;
+
+function updateUrl() {
+  const key = document.getElementById('apiKey').value.trim();
+  const base = 'https://' + HOST + '/mcp';
+  const full = key ? base + '?api_key=' + encodeURIComponent(key) : base + '?api_key=<span style="color:#f59e0b">YOUR_KEY</span>';
+  document.getElementById('mcpUrl').innerHTML = full;
+
+  const plain = key ? base + '?api_key=' + key : base + '?api_key=YOUR_KEY';
+
+  document.getElementById('desktopSnippet').innerHTML =
+    '"orbis-quant": {<br>' +
+    '&nbsp;&nbsp;"command": "npx",<br>' +
+    '&nbsp;&nbsp;"args": ["-y","mcp-remote@latest",<br>' +
+    '&nbsp;&nbsp;&nbsp;&nbsp;"' + plain + '"]<br>}';
+
+  document.getElementById('cliSnippet').innerHTML =
+    'claude mcp add orbis-quant \\\\<br>' +
+    '&nbsp;&nbsp;--transport http \\\\<br>' +
+    '&nbsp;&nbsp;' + plain;
+}
+
+function copyUrl() {
+  const key = document.getElementById('apiKey').value.trim();
+  const url = 'https://' + HOST + '/mcp' + (key ? '?api_key=' + key : '');
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['web','desktop','cli'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+}
+
+// Init URL display on load
+updateUrl();
+</script>
+</body>
+</html>"""
+
+
+@mcp.custom_route("/connect", methods=["GET"])
+async def connect_page(_request: Request) -> HTMLResponse:
+    """Human-readable setup page — share this URL with anyone you want to onboard."""
+    return HTMLResponse(_CONNECT_HTML)
 
 
 # Lazy-init the graph so import doesn't block server startup
