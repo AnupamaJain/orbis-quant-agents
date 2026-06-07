@@ -501,6 +501,39 @@ def markdown_to_html(md_text):
         
     return "\n".join(html_out)
 
+def _parse_price_target(text: str) -> str:
+    """Extract the first ₹ price target from analyst text. Returns '—' if not found."""
+    import re
+    # Prefer explicit target/level/upside mentions
+    m = re.search(
+        r'(?:target|upside|price\s+target|fair\s+value|level)[^\d₹Rs]{0,15}(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)',
+        text, re.IGNORECASE
+    )
+    if m:
+        return f"₹{m.group(1)}"
+    # Fallback: any ₹ amount ≥ 100
+    for val in re.findall(r'(?:₹|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)', text):
+        numeric = float(val.replace(",", ""))
+        if numeric >= 100:
+            return f"₹{val}"
+    return "—"
+
+
+def _parse_conviction(text: str) -> str:
+    """Extract conviction / confidence / probability % from PM decision text."""
+    import re
+    for keyword in ["conviction", "confidence", "probability", "certainty"]:
+        m = re.search(rf'{keyword}[^%\d]{{0,20}}(\d{{1,3}}(?:\.\d{{1,2}})?)\s*%', text, re.IGNORECASE)
+        if m:
+            return f"{m.group(1)}%"
+    # Fallback: any standalone % in range 10–99
+    for val in re.findall(r'(\d{1,3}(?:\.\d{1,2})?)\s*%', text):
+        n = float(val)
+        if 10 <= n <= 99:
+            return f"{val}%"
+    return "—"
+
+
 def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_name="gpt-5.4"):
     """Render a high-fidelity News Desk Layout tailored to the given ticker, parsing live feed text."""
     import re
@@ -1084,13 +1117,7 @@ with st.sidebar:
     st.divider()
     start_btn = st.button("▷ Start intelligence gathering", use_container_width=True, type="primary")
     st.divider()
-    from orbisquantagents.compliance import SEBI_DISCLAIMER
-    st.markdown(f"""
-        <div style="background-color: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 10px; border-radius: 6px; font-size: 10.5px; color: #475569; font-family: 'Inter', sans-serif; line-height: 1.45;">
-            <strong style="color: #0F172A;">SEBI Compliance Disclosure</strong><br>
-            {SEBI_DISCLAIMER}
-        </div>
-    """, unsafe_allow_html=True)
+    st.caption("*Not a SEBI registered advisor. For educational purposes only.*")
 
 # --- MAIN DASHBOARD ---
 
@@ -1420,10 +1447,12 @@ if start_btn:
                     
                     if debate.get("bull_history"):
                         bull_container.markdown(f'<div class="report-box bull-box"><b>🐂 Bull Researcher</b><br>{debate["bull_history"]}</div>', unsafe_allow_html=True)
-                        bull_target_box.markdown('<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy">₹1,520</div></div>', unsafe_allow_html=True)
+                        _bull_target = _parse_price_target(debate["bull_history"])
+                        bull_target_box.markdown(f'<div class="signal-box buy"><div class="signal-label">Bull price target</div><div class="signal-value buy">{_bull_target}</div></div>', unsafe_allow_html=True)
                     if debate.get("bear_history"):
                         bear_container.markdown(f'<div class="report-box bear-box"><b>🐻 Bear Researcher</b><br>{debate["bear_history"]}</div>', unsafe_allow_html=True)
-                        bear_downside_box.markdown('<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">₹1,240</div></div>', unsafe_allow_html=True)
+                        _bear_target = _parse_price_target(debate["bear_history"])
+                        bear_downside_box.markdown(f'<div class="signal-box sell"><div class="signal-label">Bear downside</div><div class="signal-value sell">{_bear_target}</div></div>', unsafe_allow_html=True)
                     if debate.get("judge_decision"):
                         complete_step(progress_states, "Bull & Bear Debate", "24s")
                         complete_step(progress_states, "AI Trader", "8s")
@@ -1435,7 +1464,8 @@ if start_btn:
                      progress_placeholder.markdown(render_progress(progress_states), unsafe_allow_html=True)
 
                      final_decision = chunk['final_trade_decision']
-                     pm_conviction_box.markdown('<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">62%</div></div>', unsafe_allow_html=True)
+                     _conviction = _parse_conviction(chunk['final_trade_decision'])
+                     pm_conviction_box.markdown(f'<div class="signal-box hold"><div class="signal-label">PM conviction</div><div class="signal-value hold">{_conviction}</div></div>', unsafe_allow_html=True)
 
                      if "BUY" in final_decision.upper():
                          final_container.markdown(f'<div class="report-box bull-box"><h3>🟢 Final PM Verdict</h3><br>{final_decision}</div>', unsafe_allow_html=True)
@@ -1481,15 +1511,12 @@ if start_btn:
             unsafe_allow_html=True,
         )
 
-        if sources_dict:
-            st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-            with st.expander("Data Source Attribution", expanded=False):
-                for tick, items in sources_dict.items():
-                    st.markdown(f"**Ticker: {tick}**")
-                    for item in items:
-                        st.markdown(
-                            f"- `{item['method']}` via **{item['vendor']}** — {item['timestamp']}"
-                        )
+        from orbisquantagents.compliance import SEBI_DISCLAIMER
+        st.markdown(
+            f'<div style="margin-top:12px;font-size:10px;color:#9B9590;line-height:1.5;">'
+            f'{SEBI_DISCLAIMER}</div>',
+            unsafe_allow_html=True,
+        )
     except Exception as e:
         err_msg = str(e)
         if any(k in err_msg.upper() or k in type(e).__name__.upper() for k in ["RESOURCE_EXHAUSTED", "QUOTA", "RATE_LIMIT", "429", "EXCEEDED"]):

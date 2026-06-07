@@ -44,14 +44,18 @@ def record_data_source(method: str, vendor: str, args: tuple, kwargs: dict):
     if sources is None:
         return
 
+    import re as _re
     # Extract ticker symbol from arguments
     ticker = "GLOBAL"
-    if args:
-        ticker = str(args[0]).upper()
-    elif "ticker" in kwargs:
+    if "ticker" in kwargs:
         ticker = str(kwargs["ticker"]).upper()
     elif "symbol" in kwargs:
         ticker = str(kwargs["symbol"]).upper()
+    elif args:
+        candidate = str(args[0]).upper()
+        # Ignore date strings (YYYY-MM-DD) or pure numeric args — not a ticker
+        if not _re.match(r'^\d{4}-\d{2}-\d{2}$', candidate) and not candidate.isdigit():
+            ticker = candidate
 
     # Clean ticker suffix for dictionary keys
     ticker = ticker.split('.')[0] if '.' in ticker else ticker
