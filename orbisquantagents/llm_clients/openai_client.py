@@ -58,8 +58,9 @@ class OpenAIClient(BaseLLMClient):
 
         # Provider-specific base URL and auth
         if self.provider in _PROVIDER_CONFIG:
-            base_url, api_key_env = _PROVIDER_CONFIG[self.provider]
-            llm_kwargs["base_url"] = base_url
+            default_url, api_key_env = _PROVIDER_CONFIG[self.provider]
+            # Prefer an explicitly set base_url (e.g. remote Ollama) over the default.
+            llm_kwargs["base_url"] = self.base_url or default_url
             if api_key_env:
                 api_key = os.environ.get(api_key_env)
                 if api_key:
@@ -74,9 +75,15 @@ class OpenAIClient(BaseLLMClient):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
-        # Set default timeout and max_retries if not explicitly provided
-        llm_kwargs.setdefault("timeout", 45.0)
-        llm_kwargs.setdefault("max_retries", 2)
+        # Ollama needs a longer timeout — local models are slow to generate long
+        # financial reports (and may need time to load into memory on first call).
+        # Override with OLLAMA_TIMEOUT env var for tuning.
+        if self.provider == "ollama":
+            default_timeout = float(os.environ.get("OLLAMA_TIMEOUT", "180"))
+        else:
+            default_timeout = 45.0
+        llm_kwargs.setdefault("timeout", default_timeout)
+        llm_kwargs.setdefault("max_retries", 1 if self.provider == "ollama" else 2)
 
         # Native OpenAI: use Responses API for consistent behavior across
         # all model families. Third-party providers use Chat Completions.
