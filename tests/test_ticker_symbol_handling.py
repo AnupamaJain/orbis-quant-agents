@@ -15,6 +15,10 @@ class TickerSymbolHandlingTests(unittest.TestCase):
         context_ns = build_instrument_context("RELIANCE.NS")
         self.assertIn("RELIANCE.NS", context_ns)
         self.assertIn("exchange suffix", context)
+    def test_build_instrument_context_contains_anti_code_block_instruction(self):
+        context = build_instrument_context("RELIANCE.NS")
+        self.assertIn("NEVER write, simulate, or output Python code", context)
+        self.assertIn("markdown", context.lower())
 
 
 if __name__ == "__main__":
