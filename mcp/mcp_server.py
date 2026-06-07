@@ -354,206 +354,396 @@ _CONNECT_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connect — Orbis Quant Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-       background:#0a0f1e;color:#e2e8f0;min-height:100vh;padding:40px 20px}
-  .wrap{max-width:680px;margin:0 auto}
-  .logo{display:flex;align-items:center;gap:12px;margin-bottom:48px}
-  .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);
-             border-radius:10px;display:flex;align-items:center;justify-content:center;
-             font-size:20px}
-  .logo-name{font-size:18px;font-weight:700;letter-spacing:-0.3px}
-  .logo-tag{font-size:11px;color:#6366f1;font-weight:600;letter-spacing:0.05em;
-            text-transform:uppercase;margin-top:1px}
-  h1{font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-0.5px;margin-bottom:8px}
-  .subtitle{color:#94a3b8;font-size:15px;margin-bottom:40px;line-height:1.5}
-  .card{background:#111827;border:1px solid #1f2937;border-radius:14px;
-        padding:28px;margin-bottom:20px}
-  .card-title{font-size:13px;font-weight:600;color:#6366f1;letter-spacing:0.06em;
-              text-transform:uppercase;margin-bottom:20px;display:flex;
-              align-items:center;gap:8px}
-  .step{display:flex;gap:16px;margin-bottom:18px;align-items:flex-start}
-  .step:last-child{margin-bottom:0}
-  .step-num{min-width:26px;height:26px;background:#1e1b4b;border:1px solid #4338ca;
-            border-radius:50%;display:flex;align-items:center;justify-content:center;
-            font-size:12px;font-weight:700;color:#818cf8;flex-shrink:0;margin-top:1px}
-  .step-text{font-size:14px;color:#cbd5e1;line-height:1.55}
-  .step-text strong{color:#e2e8f0;font-weight:600}
-  .step-text code{background:#1f2937;border:1px solid #374151;border-radius:5px;
-                  padding:1px 6px;font-size:13px;color:#a5b4fc;font-family:monospace}
-  .key-row{display:flex;gap:10px;margin:20px 0 6px}
-  .key-input{flex:1;background:#0f172a;border:1px solid #374151;border-radius:8px;
-             padding:10px 14px;color:#e2e8f0;font-size:14px;font-family:monospace;
-             outline:none;transition:border-color .2s}
-  .key-input:focus{border-color:#6366f1}
-  .key-input::placeholder{color:#4b5563}
-  .url-box{background:#0f172a;border:1px solid #374151;border-radius:8px;
-           padding:14px;position:relative;margin-bottom:6px}
-  .url-text{font-family:monospace;font-size:13px;color:#a5b4fc;word-break:break-all;
-            line-height:1.5;padding-right:70px}
-  .copy-btn{position:absolute;top:10px;right:10px;background:#4338ca;border:none;
-            color:#e0e7ff;font-size:12px;font-weight:600;padding:5px 12px;
-            border-radius:6px;cursor:pointer;transition:background .15s}
-  .copy-btn:hover{background:#4f46e5}
-  .copy-btn.copied{background:#065f46;color:#6ee7b7}
-  .hint{font-size:12px;color:#4b5563;margin-bottom:0}
-  .prompt-box{background:#0f172a;border:1px solid #1f2937;border-radius:8px;
-              padding:14px 16px;font-size:14px;color:#94a3b8;line-height:1.5;
-              font-style:italic;position:relative;margin-top:12px}
-  .prompt-box::before{content:'"';font-size:20px;color:#4338ca;
-                       position:absolute;top:8px;left:10px;font-style:normal}
-  .prompt-text{padding-left:16px}
-  .tabs{display:flex;gap:4px;margin-bottom:20px}
-  .tab{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:500;
-       cursor:pointer;border:1px solid transparent;color:#64748b;transition:all .15s}
-  .tab.active{background:#1e1b4b;border-color:#4338ca;color:#a5b4fc}
-  .tab:hover:not(.active){color:#94a3b8}
-  .tab-panel{display:none}
-  .tab-panel.active{display:block}
-  .footer{text-align:center;margin-top:48px;color:#374151;font-size:13px}
-  .badge{display:inline-block;background:#1e1b4b;border:1px solid #312e81;
-         color:#818cf8;font-size:11px;font-weight:600;padding:3px 8px;
-         border-radius:20px;letter-spacing:0.04em;text-transform:uppercase;margin-left:8px}
-  .platform-icon{font-size:15px}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #F5F1EB;
+    --surface:   #FDFCFA;
+    --border:    #E8E3DB;
+    --border-med:#D4CEC5;
+    --text:      #1A1714;
+    --text-2:    #6B6560;
+    --text-3:    #9B9590;
+    --accent:    #D97757;
+    --accent-dk: #C4623E;
+    --accent-bg: #FDF0EB;
+    --accent-bd: #F5C9B7;
+    --code-bg:   #EDE8E0;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow:    0 4px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.05);
+    --radius:    14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 660px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 52px; }
+  .logo   { display: flex; align-items: center; gap: 11px; }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    box-shadow: 0 2px 8px rgba(217,119,87,.30);
+  }
+  .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; color: var(--text); }
+  .logo-sub  { font-size: 11px; color: var(--text-3); margin-top: 1px; font-weight: 500; letter-spacing: 0.02em; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px 5px 10px;
+    font-size: 12px; color: var(--text-2); font-weight: 500;
+    box-shadow: var(--shadow-sm);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #3B9E6D;
+    box-shadow: 0 0 0 2px rgba(59,158,109,.18);
+    animation: pulse 2.5s ease infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 2px rgba(59,158,109,.18); }
+    50%      { box-shadow: 0 0 0 4px rgba(59,158,109,.10); }
+  }
+
+  /* ── Hero ── */
+  .hero { margin-bottom: 36px; }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; letter-spacing: -0.6px;
+    line-height: 1.18; margin-bottom: 10px;
+    color: var(--text);
+  }
+  .hero p {
+    font-size: 15px; color: var(--text-2); line-height: 1.6;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 28px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-label {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  /* ── API key + URL ── */
+  .key-input {
+    width: 100%; background: var(--bg);
+    border: 1.5px solid var(--border-med);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 14px;
+    font-family: 'Inter', monospace; color: var(--text);
+    outline: none; transition: border-color .18s, box-shadow .18s;
+    margin-bottom: 10px;
+  }
+  .key-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217,119,87,.12); }
+  .key-input::placeholder { color: var(--text-3); }
+
+  .url-row {
+    display: flex; align-items: stretch; gap: 8px;
+  }
+  .url-box {
+    flex: 1; background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12.5px; color: #6B3D2E;
+    word-break: break-all; line-height: 1.55;
+    min-width: 0;
+  }
+  .url-box .placeholder { color: var(--accent); font-weight: 600; }
+  .copy-btn {
+    flex-shrink: 0;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    padding: 0 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .15s, transform .1s;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 1px 3px rgba(217,119,87,.25);
+  }
+  .copy-btn:hover   { background: var(--accent-dk); }
+  .copy-btn:active  { transform: scale(.97); }
+  .copy-btn.copied  { background: #3B9E6D; }
+  .hint { font-size: 12px; color: var(--text-3); margin-top: 8px; }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex; gap: 2px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 3px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; text-align: center;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text-2);
+    transition: all .15s;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+  .tab.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Steps ── */
+  .step { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    min-width: 24px; height: 24px;
+    background: var(--accent-bg); border: 1.5px solid var(--accent-bd);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-body { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+  .step-body strong { color: var(--text); font-weight: 600; }
+  .step-body code {
+    background: var(--code-bg); border: 1px solid var(--border-med);
+    border-radius: 5px; padding: 1px 6px;
+    font-size: 12.5px; color: #6B3D2E;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ── Code snippets inside steps ── */
+  .snippet {
+    margin-top: 10px;
+    background: #1A1714;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px; color: #C9C0B5; line-height: 1.7;
+    overflow-x: auto;
+  }
+  .snippet .k { color: #D97757; }
+  .snippet .s { color: #84C59A; }
+  .snippet .p { color: #8BA7C9; }
+
+  /* ── Prompts ── */
+  .prompt-grid { display: flex; flex-direction: column; gap: 8px; }
+  .prompt {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px; color: var(--text-2); line-height: 1.5;
+    cursor: pointer; transition: border-color .15s, background .15s;
+    position: relative;
+    padding-right: 40px;
+  }
+  .prompt:hover { border-color: var(--accent-bd); background: var(--accent-bg); color: var(--text); }
+  .prompt::after {
+    content: '↗';
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; color: var(--text-3);
+    transition: color .15s;
+  }
+  .prompt:hover::after { color: var(--accent); }
+
+  /* ── Capabilities strip ── */
+  .caps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+  .cap {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; color: var(--text-2); font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; margin-top: 52px;
+    font-size: 13px; color: var(--text-3);
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+  }
+  .footer a { color: var(--text-3); text-decoration: none; }
+  .footer a:hover { color: var(--text-2); }
+  .footer-sep { color: var(--border-med); }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="logo">
-    <div class="logo-icon">⚡</div>
-    <div>
-      <div class="logo-name">Orbis Quant Agents</div>
-      <div class="logo-tag">NSE · BSE · AI-Powered</div>
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">⚡</div>
+      <div>
+        <div class="logo-name">Orbis Quant Agents</div>
+        <div class="logo-sub">NSE · BSE · Indian Markets</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      Live
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Your AI stock analyst,<br>inside Claude</h1>
+    <p>Multi-agent intelligence for Indian markets — technical, fundamental,<br>
+    sentiment &amp; bull/bear debate. Connect once, analyse any NSE or BSE stock.</p>
+    <div class="caps">
+      <span class="cap">📊 Technical Analysis</span>
+      <span class="cap">📈 Fundamentals</span>
+      <span class="cap">🗞 Sentiment &amp; News</span>
+      <span class="cap">⚔️ Bull vs Bear Debate</span>
+      <span class="cap">⚡ Live Price Snapshots</span>
     </div>
   </div>
 
-  <h1>Connect to your AI trading analyst</h1>
-  <p class="subtitle">Multi-agent analysis for Indian markets — technical, fundamental, sentiment &amp; debate.<br>
-  Works inside Claude.ai, Claude Desktop, and the Claude CLI.</p>
-
-  <!-- Step 0: Enter API key -->
+  <!-- ── Step 1: API Key ── -->
   <div class="card">
-    <div class="card-title">🔑 Your MCP URL</div>
-    <div class="step-text" style="margin-bottom:14px;color:#94a3b8;font-size:14px">
-      Enter the API key you received, then copy the personalised URL below.
-    </div>
-    <div class="key-row">
-      <input class="key-input" id="apiKey" type="text" placeholder="Paste your API key here…"
-             oninput="updateUrl()">
-    </div>
-    <div class="url-box">
-      <div class="url-text" id="mcpUrl">https://RAILWAY_HOST/mcp?api_key=<span style="color:#f59e0b">YOUR_KEY</span></div>
+    <div class="card-label">Step 1 — Your MCP URL</div>
+    <input class="key-input" id="apiKey" type="text"
+           placeholder="Paste your API key here…" oninput="updateUrl()" autocomplete="off">
+    <div class="url-row">
+      <div class="url-box" id="mcpUrl">https://<span id="host-display">…</span>/mcp?api_key=<span class="placeholder">YOUR_KEY</span></div>
       <button class="copy-btn" id="copyBtn" onclick="copyUrl()">Copy</button>
     </div>
-    <p class="hint">Share your key only with people you trust — it grants access to your Ollama instance.</p>
+    <p class="hint">Keep this URL private — it grants access to your analyst instance.</p>
   </div>
 
-  <!-- Platform tabs -->
+  <!-- ── Step 2: Platform ── -->
   <div class="card">
-    <div class="card-title">📡 Connection steps</div>
-    <div class="tabs">
-      <div class="tab active platform-icon" onclick="switchTab('web')">🌐 Claude.ai</div>
-      <div class="tab platform-icon" onclick="switchTab('desktop')">🖥 Desktop</div>
-      <div class="tab platform-icon" onclick="switchTab('cli')">⌨ CLI</div>
+    <div class="card-label">Step 2 — Connect to Claude</div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('web')">🌐 Claude.ai</div>
+      <div class="tab" onclick="switchTab('desktop')">🖥 Desktop</div>
+      <div class="tab" onclick="switchTab('cli')">⌨ CLI</div>
     </div>
 
     <div class="tab-panel active" id="tab-web">
-      <div class="step"><div class="step-num">1</div><div class="step-text">
-        Open <strong>claude.ai</strong> and go to <strong>Settings → Connectors → Customize</strong></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-text">
-        Click the <code>+</code> icon next to the search bar, then <strong>Add Custom Connector</strong></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-text">
-        Set the name to <code>Orbis Quant Agents</code> and paste your MCP URL from above</div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-text">
-        Click <strong>Connect</strong> — tools will appear in your next conversation</div></div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">Open <strong>claude.ai</strong> → <strong>Settings → Connectors → Customize</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">Click <strong>Add Custom Connector</strong> and set the name to <code>Orbis Quant Agents</code></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">Paste your MCP URL from above and click <strong>Connect</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">Tools appear automatically in your next conversation — look for the <strong>⚙ toolbar icon</strong></div>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-desktop">
-      <div class="step"><div class="step-num">1</div><div class="step-text">
-        Open <strong>~/Library/Application Support/Claude/claude_desktop_config.json</strong></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-text">
-        Add the block below inside <code>"mcpServers"</code>:
-        <div class="url-box" style="margin-top:10px;padding-right:14px">
-          <div class="url-text" style="font-size:12px;padding-right:0" id="desktopSnippet">
-            "orbis-quant": {<br>
-            &nbsp;&nbsp;"command": "npx",<br>
-            &nbsp;&nbsp;"args": ["-y","mcp-remote@latest",<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;"https://RAILWAY_HOST/mcp?api_key=YOUR_KEY"]<br>
-            }
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">Open <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">Add this block inside <code>"mcpServers"</code>:
+          <div class="snippet" id="desktopSnippet">
+<span class="p">"orbis-quant"</span>: {<br>
+&nbsp;&nbsp;<span class="p">"command"</span>: <span class="s">"npx"</span>,<br>
+&nbsp;&nbsp;<span class="p">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mcp-remote@latest"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s" id="desktopUrl">"https://…/mcp?api_key=YOUR_KEY"</span>]<br>
+}
           </div>
         </div>
-      </div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-text">
-        Save the file and <strong>restart Claude Desktop</strong></div></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">Save the file and <strong>restart Claude Desktop</strong></div>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-cli">
-      <div class="step"><div class="step-num">1</div><div class="step-text">
-        Run in your terminal:
-        <div class="url-box" style="margin-top:10px;padding-right:14px">
-          <div class="url-text" style="padding-right:0" id="cliSnippet">
-            claude mcp add orbis-quant \\<br>
-            &nbsp;&nbsp;--transport http \\<br>
-            &nbsp;&nbsp;https://RAILWAY_HOST/mcp?api_key=YOUR_KEY
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">Run in your terminal:
+          <div class="snippet" id="cliSnippet">
+<span class="k">claude</span> mcp add orbis-quant \<br>
+&nbsp;&nbsp;<span class="k">--transport</span> http \<br>
+&nbsp;&nbsp;<span class="s" id="cliUrl">https://…/mcp?api_key=YOUR_KEY</span>
           </div>
         </div>
-      </div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-text">
-        Verify with <code>claude mcp list</code> — you should see <strong>orbis-quant</strong></div></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">Verify with <code>claude mcp list</code> — you should see <strong>orbis-quant</strong></div>
+      </div>
     </div>
   </div>
 
-  <!-- Test prompts -->
+  <!-- ── Step 3: Try it ── -->
   <div class="card">
-    <div class="card-title">🧪 Test your connection</div>
-    <div class="step-text" style="margin-bottom:4px;color:#94a3b8">
-      Once connected, try one of these prompts in Claude:
+    <div class="card-label">Step 3 — Try these prompts</div>
+    <div class="prompt-grid">
+      <div class="prompt" onclick="copyPrompt(this)">Analyze RELIANCE.NS — give me the full Orbis Quant intelligence report</div>
+      <div class="prompt" onclick="copyPrompt(this)">Pre-market setup for TCS and INFY — what are the key levels today?</div>
+      <div class="prompt" onclick="copyPrompt(this)">Screen my watchlist: RELIANCE, HDFC, ICICIBANK, SBIN, WIPRO</div>
+      <div class="prompt" onclick="copyPrompt(this)">Is HDFCBANK a buy right now? Run the full bull vs bear debate</div>
     </div>
-    <div class="prompt-box"><div class="prompt-text">
-      Analyze RELIANCE.NS using Orbis Quant — give me the full intelligence report
-    </div></div>
-    <div class="prompt-box" style="margin-top:8px"><div class="prompt-text">
-      Give me a pre-market setup for TCS and INFY
-    </div></div>
-    <div class="prompt-box" style="margin-top:8px"><div class="prompt-text">
-      Screen my watchlist: RELIANCE, HDFC, ICICIBANK, SBIN, WIPRO
-    </div></div>
   </div>
 
-  <div class="footer">
-    Orbis Quant Agents &nbsp;·&nbsp; Powered by <strong>qwen3</strong> via Ollama &nbsp;·&nbsp;
-    <span style="color:#4b5563">Free · Private · Local AI</span>
-  </div>
+  <footer class="footer">
+    <span>Orbis Quant Agents</span>
+    <span class="footer-sep">·</span>
+    <span>AI-powered · Indian markets</span>
+    <span class="footer-sep">·</span>
+    <a href="/health">Status</a>
+  </footer>
 
 </div>
 <script>
 const HOST = location.host;
+document.getElementById('host-display').textContent = HOST;
 
 function updateUrl() {
   const key = document.getElementById('apiKey').value.trim();
   const base = 'https://' + HOST + '/mcp';
-  const full = key ? base + '?api_key=' + encodeURIComponent(key) : base + '?api_key=<span style="color:#f59e0b">YOUR_KEY</span>';
-  document.getElementById('mcpUrl').innerHTML = full;
+  const plain = base + '?api_key=' + (key || 'YOUR_KEY');
 
-  const plain = key ? base + '?api_key=' + key : base + '?api_key=YOUR_KEY';
+  const box = document.getElementById('mcpUrl');
+  if (key) {
+    box.textContent = plain;
+  } else {
+    box.innerHTML = 'https://' + HOST + '/mcp?api_key=<span class="placeholder">YOUR_KEY</span>';
+  }
 
-  document.getElementById('desktopSnippet').innerHTML =
-    '"orbis-quant": {<br>' +
-    '&nbsp;&nbsp;"command": "npx",<br>' +
-    '&nbsp;&nbsp;"args": ["-y","mcp-remote@latest",<br>' +
-    '&nbsp;&nbsp;&nbsp;&nbsp;"' + plain + '"]<br>}';
-
-  document.getElementById('cliSnippet').innerHTML =
-    'claude mcp add orbis-quant \\\\<br>' +
-    '&nbsp;&nbsp;--transport http \\\\<br>' +
-    '&nbsp;&nbsp;' + plain;
+  document.getElementById('desktopUrl').textContent = '"' + plain + '"';
+  document.getElementById('cliUrl').textContent = plain;
 }
 
 function copyUrl() {
   const key = document.getElementById('apiKey').value.trim();
-  const url = 'https://' + HOST + '/mcp' + (key ? '?api_key=' + key : '');
+  const url = 'https://' + HOST + '/mcp' + (key ? '?api_key=' + encodeURIComponent(key) : '');
   navigator.clipboard.writeText(url).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = 'Copied!';
@@ -562,17 +752,20 @@ function copyUrl() {
   });
 }
 
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const names = ['web','desktop','cli'];
-    t.classList.toggle('active', names[i] === name);
-  });
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.toggle('active', p.id === 'tab-' + name);
+function copyPrompt(el) {
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const orig = el.textContent;
+    el.textContent = 'Copied to clipboard!';
+    setTimeout(() => { el.textContent = orig; }, 1500);
   });
 }
 
-// Init URL display on load
+function switchTab(name) {
+  const names = ['web', 'desktop', 'cli'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
 updateUrl();
 </script>
 </body>
