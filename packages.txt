@@ -1,2 +1,4 @@
 rustc
 cargo
+libxml2-dev
+libxslt1-dev
