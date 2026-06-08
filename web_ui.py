@@ -25,7 +25,7 @@ except Exception:
 
 # --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Orbis Quant Agents | AI Trading Platform",
+    page_title="Orbis Quant Agents | AI Investing Platform",
     page_icon=logo_img,
     layout="wide",
     initial_sidebar_state="expanded",
@@ -248,6 +248,10 @@ st.markdown("""
     div[data-testid="stMetric"] div[data-testid="stMetricDelta"] {
         font-size: 11px !important; font-weight: 500 !important;
     }
+
+    .mo-val { font-size: 28px !important; font-weight: 700 !important; color: #1A1714 !important; letter-spacing: -0.5px !important; line-height: 1 !important; }
+    .mo-sub { font-size: 18px !important; font-weight: 700 !important; color: #1A1714 !important; letter-spacing: -0.3px !important; }
+    .mo-range { font-size: 13px !important; font-weight: 700 !important; color: #6B6560 !important; }
 
     /* ── Report content ── */
     .report-content {
@@ -502,20 +506,27 @@ def markdown_to_html(md_text):
     return "\n".join(html_out)
 
 def _parse_price_target(text: str) -> str:
-    """Extract the first ₹ price target from analyst text. Returns '—' if not found."""
+    """Extract the first price target from analyst text. Returns '—' if not found."""
     import re
     # Prefer explicit target/level/upside mentions
     m = re.search(
-        r'(?:target|upside|price\s+target|fair\s+value|level)[^\d₹Rs]{0,15}(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)',
+        r'(?:target|upside|price\s+target|fair\s+value|level)[^\d$₹€£A-Za-z]{0,25}(₹|Rs\.?|INR|\$|USD|€|£)?\s*([\d,]+(?:\.\d{1,2})?)',
         text, re.IGNORECASE
     )
     if m:
-        return f"₹{m.group(1)}"
-    # Fallback: any ₹ amount ≥ 100
-    for val in re.findall(r'(?:₹|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)', text):
+        curr = m.group(1) or ""
+        if curr.upper() in ["USD", "INR", "RS", "RS."]:
+             curr = curr + " "
+        return f"{curr}{m.group(2)}".strip()
+        
+    # Fallback: any currency amount
+    for curr, val in re.findall(r'(₹|Rs\.?|INR|\$|USD|€|£)\s*([\d,]+(?:\.\d{1,2})?)', text):
         numeric = float(val.replace(",", ""))
-        if numeric >= 100:
-            return f"₹{val}"
+        if numeric >= 1:
+            if curr.upper() in ["USD", "INR", "RS", "RS."]:
+                curr = curr + " "
+            return f"{curr}{val}".strip()
+            
     return "—"
 
 
@@ -526,11 +537,22 @@ def _parse_conviction(text: str) -> str:
         m = re.search(rf'{keyword}[^%\d]{{0,20}}(\d{{1,3}}(?:\.\d{{1,2}})?)\s*%', text, re.IGNORECASE)
         if m:
             return f"{m.group(1)}%"
+        # Look for X/10
+        m2 = re.search(rf'{keyword}.*?(\d{{1,2}}(?:\.\d)?)\s*/\s*10', text, re.IGNORECASE)
+        if m2:
+            return f"{m2.group(1)}/10"
+            
     # Fallback: any standalone % in range 10–99
     for val in re.findall(r'(\d{1,3}(?:\.\d{1,2})?)\s*%', text):
         n = float(val)
         if 10 <= n <= 99:
             return f"{val}%"
+            
+    # Fallback: High/Medium/Low
+    m3 = re.search(r'conviction[^a-zA-Z]+(high|medium|low)', text, re.IGNORECASE)
+    if m3:
+        return m3.group(1).capitalize()
+        
     return "—"
 
 
@@ -667,51 +689,10 @@ def render_news_desk_html(ticker, raw_news_text, provider_name="OpenAI", model_n
                     "dot_color": dot_color
                 })
 
-    # Fallback to realistic context headlines if none parsed from live stream yet
+    # If we still have no headlines, raise an error so the UI falls back to rendering raw markdown
+    # instead of displaying hallucinated/mocked data.
     if not headlines:
-        ticker_name = ticker.split('.')[0]
-        headlines = [
-            {
-                "title": f"<strong>Institutional buyers acquire bulk blocks</strong> · <span style='font-weight: 400; color: #6B6560;'>Institutional buyers acquire bulk blocks in {ticker_name} amid stable outlook</span>",
-                "source": "Exchange Feed",
-                "time": "5m ago",
-                "sentiment": "BULLISH",
-                "sentiment_color": "#1A6B46",
-                "sentiment_bg": "#EBF7F1",
-                "sentiment_border": "#A8DCC3",
-                "dot_color": "#3B9E6D"
-            },
-            {
-                "title": f"<strong>Standard structural expansion plans</strong> · <span style='font-weight: 400; color: #6B6560;'>{ticker_name} announces standard structural expansion plans starting next quarter</span>",
-                "source": "Press Release",
-                "time": "12m ago",
-                "sentiment": "NEUTRAL",
-                "sentiment_color": "#6B6560",
-                "sentiment_bg": "#F5F1EB",
-                "sentiment_border": "#E8E3DB",
-                "dot_color": "#9B9590"
-            },
-            {
-                "title": f"<strong>Consolidated key support levels</strong> · <span style='font-weight: 400; color: #6B6560;'>Technical analysis shows consolidated key support levels for {ticker_name}</span>",
-                "source": "Technical Analyst",
-                "time": "25m ago",
-                "sentiment": "BULLISH",
-                "sentiment_color": "#1A6B46",
-                "sentiment_bg": "#EBF7F1",
-                "sentiment_border": "#A8DCC3",
-                "dot_color": "#3B9E6D"
-            },
-            {
-                "title": f"<strong>Macro headwinds indicate pressure</strong> · <span style='font-weight: 400; color: #6B6560;'>Macro headwinds indicate potential margin distribution pressure in industry sector</span>",
-                "source": "Sector Wire",
-                "time": "45m ago",
-                "sentiment": "BEARISH",
-                "sentiment_color": "#C94040",
-                "sentiment_bg": "#FDF0F0",
-                "sentiment_border": "#F5BEBE",
-                "dot_color": "#C94040"
-            }
-        ]
+        raise ValueError("No parseable headlines found in the news report.")
         
     bull_cnt = sum(1 for h in headlines if h["sentiment"] == "BULLISH")
     bear_cnt = sum(1 for h in headlines if h["sentiment"] == "BEARISH")
@@ -1244,11 +1225,12 @@ with main_tabs[0]:
         vol_fmt = f"{volume/1e6:,.1f}M" if volume < 1e9 else f"{volume/1e9:,.2f}B"
         _card_style = "background:#FDFCFA;border:1px solid #E8E3DB;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);"
         _lbl_style  = "font-size:10px;color:#9B9590;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:8px;"
+        
         metrics_html = (
-            f'<div style="display:flex;gap:12px;margin-bottom:4px;font-family:Inter,sans-serif;">'
+            f'<div style="display:flex;gap:12px;margin-bottom:4px;">'
             f'<div style="flex:1.1;{_card_style}">'
             f'<div style="{_lbl_style}">Current Price</div>'
-            f'<div style="font-size:20px;font-weight:700;color:#1A1714;letter-spacing:-0.5px;line-height:1;">&#8377;{current_price:,.2f}</div>'
+            f'<div class="mo-val">&#8377;{current_price:,.2f}</div>'
             f'<div style="margin-top:10px;">'
             f'<span style="display:inline-flex;align-items:center;background:{delta_bg};border:1px solid {delta_bd};color:{delta_color};font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">'
             f'{delta_arrow} {abs(change_val):,.2f} ({change_pct:+.2f}%)'
@@ -1256,9 +1238,9 @@ with main_tabs[0]:
             f'<div style="flex:1.4;{_card_style}">'
             f'<div style="{_lbl_style}">52-Week Range</div>'
             f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">'
-            f'<span style="font-size:13px;font-weight:600;color:#6B6560;">&#8377;{low_52:,.2f}</span>'
-            f'<span style="font-size:16px;font-weight:700;color:#1A1714;letter-spacing:-0.3px;">&#8377;{current_price:,.2f}</span>'
-            f'<span style="font-size:13px;font-weight:600;color:#6B6560;">&#8377;{high_52:,.2f}</span>'
+            f'<span class="mo-range">&#8377;{low_52:,.2f}</span>'
+            f'<span class="mo-sub">&#8377;{current_price:,.2f}</span>'
+            f'<span class="mo-range">&#8377;{high_52:,.2f}</span>'
             f'</div>'
             f'<div style="position:relative;height:6px;background:#E8E3DB;border-radius:3px;">'
             f'<div style="position:absolute;left:0;top:0;height:6px;width:{pos_pct}%;background:linear-gradient(to right,#D97757,#3B7DD8);border-radius:3px;"></div>'
@@ -1268,7 +1250,7 @@ with main_tabs[0]:
             f'<span>52w Low</span><span>52w High</span></div></div>'
             f'<div style="flex:0.9;{_card_style}">'
             f'<div style="{_lbl_style}">Latest Volume</div>'
-            f'<div style="font-size:20px;font-weight:700;color:#1A1714;letter-spacing:-0.5px;line-height:1;">{vol_fmt}</div>'
+            f'<div class="mo-val">{vol_fmt}</div>'
             f'<div style="font-size:10px;color:#9B9590;margin-top:8px;font-weight:500;">shares traded today</div>'
             f'</div></div>'
         )
@@ -1300,18 +1282,7 @@ with main_tabs[2]:
     analyst_tabs = st.tabs(analysts)
     analyst_containers = {analysts[i]: analyst_tabs[i].empty() for i in range(len(analysts))}
     for a in analysts:
-        if a == "News":
-            analyst_containers[a].markdown(
-                render_news_desk_html(
-                    ticker,
-                    "",
-                    provider_name=provider,
-                    model_name=get_active_model_name(provider)
-                ),
-                unsafe_allow_html=True
-            )
-        else:
-            analyst_containers[a].info("Waiting for analysis to start...")
+        analyst_containers[a].info("Waiting for analysis to start...")
 
 # Tab 3: Debate Arena
 with main_tabs[3]:
@@ -1533,7 +1504,13 @@ if start_btn:
 
         # --- SEBI COMPLIANCE AUDIT TRAIL (rendered once, after the stream ends) ---
         st.balloons()
-        st.success("Analysis Complete!")
+        st.markdown(
+            '<div style="padding:16px; border:1px solid #A8DCC3; border-radius:8px; background:#EBF7F1; display:flex; align-items:center; gap:12px; margin-bottom: 16px;">'
+            '<div style="width:24px; height:24px; border-radius:50%; background:#3B9E6D; color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:bold;">✓</div>'
+            '<span style="font-size:15px; font-weight:600; color:#1A6B46; font-family:\'Inter\',sans-serif;">Analysis Complete!</span>'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
         state = graph.curr_state or {}
         session_val   = state.get('session_id', 'N/A')

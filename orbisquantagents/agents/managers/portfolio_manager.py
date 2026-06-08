@@ -1,4 +1,5 @@
-from orbisquantagents.agents.utils.agent_utils import build_instrument_context, get_language_instruction
+
+from orbisquantagents.agents.utils.agent_utils import build_instrument_context, get_grounding_instruction, get_language_instruction
 
 
 def create_portfolio_manager(llm, memory):
@@ -22,6 +23,8 @@ def create_portfolio_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
+        grounding = get_grounding_instruction()
+
         prompt = f"""As the Portfolio Manager, synthesize the risk analysts' debate and deliver the final trading decision.
 
 {instrument_context}
@@ -43,7 +46,7 @@ def create_portfolio_manager(llm, memory):
 **Required Output Structure:**
 1. **Rating**: State one of Buy / Overweight / Hold / Underweight / Sell.
 2. **Executive Summary**: A concise action plan covering entry strategy, position sizing, key risk levels, and time horizon.
-3. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate and past reflections.
+3. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate and past reflections. Cite specific data points from the reports — do NOT invent or assume any numbers not present in the analyst reports above.
 
 ---
 
@@ -52,7 +55,8 @@ def create_portfolio_manager(llm, memory):
 
 ---
 
-Be decisive and ground every conclusion in specific evidence from the analysts.{get_language_instruction()}"""
+Be decisive and ground every conclusion in specific evidence from the analysts. Do not fabricate any financial metric not present in the reports.{get_language_instruction()}
+{grounding}"""
 
         response = llm.invoke(prompt)
 

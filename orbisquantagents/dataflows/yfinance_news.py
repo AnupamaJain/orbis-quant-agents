@@ -120,12 +120,9 @@ def get_global_news_yfinance(
     Returns:
         Formatted string containing global news articles
     """
-    # Search queries for macro/global news
+    # Search queries for macro/global news (reduced to 1 to avoid massive yfinance rate limit tar-pitting)
     search_queries = [
-        "stock market economy",
-        "Federal Reserve interest rates",
-        "inflation economic outlook",
-        "global markets trading",
+        "stock market economy inflation",
     ]
 
     all_news = []
