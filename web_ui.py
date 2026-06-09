@@ -1220,9 +1220,12 @@ with main_tabs[0]:
         delta_bd    = "#F5BEBE" if change_val < 0 else "#A8DCC3"
         delta_arrow = "↓" if change_val < 0 else "↑"
         range_span = high_52 - low_52
-        pos_pct = int(((current_price - low_52) / range_span * 100)) if range_span else 50
+        if pd.isna(range_span) or range_span == 0 or pd.isna(current_price) or pd.isna(low_52):
+            pos_pct = 50
+        else:
+            pos_pct = int(((current_price - low_52) / range_span * 100))
         pos_pct = max(2, min(98, pos_pct))
-        vol_fmt = f"{volume/1e6:,.1f}M" if volume < 1e9 else f"{volume/1e9:,.2f}B"
+        vol_fmt = "N/A" if pd.isna(volume) else (f"{volume/1e6:,.1f}M" if volume < 1e9 else f"{volume/1e9:,.2f}B")
         _card_style = "background:#FDFCFA;border:1px solid #E8E3DB;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);"
         _lbl_style  = "font-size:10px;color:#9B9590;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:8px;"
         
