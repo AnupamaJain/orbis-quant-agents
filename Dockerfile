@@ -24,4 +24,6 @@ WORKDIR /home/appuser/app
 
 COPY --from=builder --chown=appuser:appuser /build .
 
-ENTRYPOINT ["orbisquantagents"]
+# Google Cloud Run dynamically assigns a port via the $PORT environment variable.
+# We default to 8501 so it still works if you run it locally via standard Docker.
+ENTRYPOINT ["sh", "-c", "streamlit run web_ui.py --server.port ${PORT:-8501} --server.address 0.0.0.0"]

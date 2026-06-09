@@ -1226,24 +1226,30 @@ with main_tabs[0]:
             pos_pct = int(((current_price - low_52) / range_span * 100))
         pos_pct = max(2, min(98, pos_pct))
         vol_fmt = "N/A" if pd.isna(volume) else (f"{volume/1e6:,.1f}M" if volume < 1e9 else f"{volume/1e9:,.2f}B")
+        
+        current_price_str = "N/A" if pd.isna(current_price) else f"&#8377;{current_price:,.2f}"
+        change_val_str = "N/A" if pd.isna(change_val) else f"{abs(change_val):,.2f}"
+        change_pct_str = "N/A" if pd.isna(change_pct) else f"{change_pct:+.2f}%"
+        low_52_str = "N/A" if pd.isna(low_52) else f"&#8377;{low_52:,.2f}"
+        high_52_str = "N/A" if pd.isna(high_52) else f"&#8377;{high_52:,.2f}"
+
         _card_style = "background:#FDFCFA;border:1px solid #E8E3DB;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);"
         _lbl_style  = "font-size:10px;color:#9B9590;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:8px;"
-        
         metrics_html = (
             f'<div style="display:flex;gap:12px;margin-bottom:4px;">'
             f'<div style="flex:1.1;{_card_style}">'
             f'<div style="{_lbl_style}">Current Price</div>'
-            f'<div class="mo-val">&#8377;{current_price:,.2f}</div>'
+            f'<div class="mo-val">{current_price_str}</div>'
             f'<div style="margin-top:10px;">'
             f'<span style="display:inline-flex;align-items:center;background:{delta_bg};border:1px solid {delta_bd};color:{delta_color};font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">'
-            f'{delta_arrow} {abs(change_val):,.2f} ({change_pct:+.2f}%)'
+            f'{delta_arrow} {change_val_str} ({change_pct_str})'
             f'</span></div></div>'
             f'<div style="flex:1.4;{_card_style}">'
             f'<div style="{_lbl_style}">52-Week Range</div>'
             f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">'
-            f'<span class="mo-range">&#8377;{low_52:,.2f}</span>'
-            f'<span class="mo-sub">&#8377;{current_price:,.2f}</span>'
-            f'<span class="mo-range">&#8377;{high_52:,.2f}</span>'
+            f'<span class="mo-range">{low_52_str}</span>'
+            f'<span class="mo-sub">{current_price_str}</span>'
+            f'<span class="mo-range">{high_52_str}</span>'
             f'</div>'
             f'<div style="position:relative;height:6px;background:#E8E3DB;border-radius:3px;">'
             f'<div style="position:absolute;left:0;top:0;height:6px;width:{pos_pct}%;background:linear-gradient(to right,#D97757,#3B7DD8);border-radius:3px;"></div>'
